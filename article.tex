@@ -140,7 +140,14 @@ Prediction- and observation functions are generalized to multiple conditions by 
 \end{align*}
 and the different prediction functions $x_1, \dots, x_n$ or observation functions $g_1, \dots, g_n$ are defined and combined by the \code{"+"} operator analogously to \code{p}.
 
-All commands, \code{P()}, \code{Xs()}, \code{Y()}, etc.~can be executed with \code{condition = NULL}. In that case, the corresponding function is generic and, if called for different conditions, the same identical function is evaluated with the condition-specific input. 
+All commands, \code{P()}, \code{Xs()}, \code{Y()}, etc.~can be executed with \code{condition = NULL}. In that case, the corresponding returned function is generic and, if called for different conditions, the same identical function is evaluated with the condition-specific input. 
+
+\subsection{Objective function}
+
+The aim of \pkg{dMod} is parameter estimation. The objective function to be minimized for this purpose is the weighted least squares function which is produced by the command \code{normL2(data, prdfn)} where \code{data} is a \code{datalist} object and \code{prdfn} is a prediction function. A \code{datalist} is a list of \code{data.frame}s providing time points, observables, measured values and uncertainties for each condition. The objective function is the final link in the chain of parameter transformations, prediction- and observation functions. It collects all derivative information and besides the objective value it computes gradient and Hessian. The standard optimizer employed within \pkg{dMod} is the \code{trust()} optimizer from the \pkg{trust} package. 
+
+Objective functions can be added by the \code{"+"} operator, meaning the objective values, gradients and Hessians are added. Besides \code{normL2()}, functions like \code{constraintL2()} and \code{datapointL2()} produce objective functions, too. They allow to define parameter priors or treat data points as parameters.
+
 
 \section{Three-compartment model of bile acid transport}
 
