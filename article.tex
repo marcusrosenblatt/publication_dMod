@@ -14,7 +14,7 @@
 	Wolfgang Mader\\University of Freiburg \And
 	Mirjam Fehling-Kaschek\\University of Freiburg}
 
-\title{Dynamic Modeling and Parameter Estimation in \proglang{R}}
+\title{Dynamic Modeling, Parameter Estimation and Uncertainty Analysis in \proglang{R}}
 
 %% for pretty printing and a nice hypersummary also set:
 \Plainauthor{Daniel Kaschek, Marcus Rosenblatt, Wolfgang Mader, Mirjam Fehling-Kaschek} %% comma-separated
@@ -23,7 +23,17 @@
 
 %% an abstract and keywords
 \Abstract{
-  The abstract of the article.
+In a wide variety of research fields, dynamic modeling is employed as an instrument to learn and understand complex systems. The differential equations involved in this process are mostly non-linear and depend on many parameters which decide upon the characteristics of the emergent system. The inverse problem, i.e.~the inference or estimation of parameter values from observed data, is interesting from two points of view. First, the existence point of view, dealing with the question whether the system is able to  produce the observed dynamics for any parameter values. Second, the identifiability point of view, investigating invariance under change of parameter values and quantifying parameter uncertainty.
+
+\noindent In this paper, we present the \pkg{dMod} package which provides an \proglang{R} framework to deal with the inverse problem in dynamic systems. The particularity of the \pkg{dMod} approach is to provide and propagate accurate derivatives computed from symbolic expressions. This derivative information highly supports the convergence of optimization routines and provides the numerical stability required by sofisticated uncertainty analysis methods. Computational efficiency is guaranteed by automatic generation and integration of \proglang{C} code. The framework is object oriented (S3) and provides a variety of functions to set up dynamic models, observation functions and parameter transformations for multi-conditional parameter estimation.
+
+\noindent The key elements of the framework and the methodology implemented in \pkg{dMod} are highlighted by an application on a three-compartment transporter model.
+
+
+
+%First, the question is if there exist any parameters such that the dynamic system is able to produce the observed dynamics and second, how well are the parameters determined by the data.
+
+
 }
 \Keywords{Dynamic models, parameter estimation, code generation, maximum likelihood}
 \Plainkeywords{Dynamic models, parameter estimation, code generation, maximum likelihood} %% without formatting
@@ -63,6 +73,8 @@
 
 %% include your article here, just as usual
 %% Note that you should use the \pkg{}, \proglang{} and \code{} commands.
+\section{Introduction}
+	Dynamic models are found in various research fields, ranging from physics to biology or finance. In a dynamic model, the single terms correspond to mechanisms or processes which are combined to a whole, giving rise to a complex system. If the single terms are associated to parameters, parameter estimation can identify those processes of the complex system that are crucial to explain the observation. In that sense, parameter estimation can
 
 \section{Theoretical background}
 
