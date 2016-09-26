@@ -25,9 +25,9 @@
 \Abstract{
 In a wide variety of research fields, dynamic modeling is employed as an instrument to learn and understand complex systems. The differential equations involved in this process are mostly non-linear and depend on many parameters which decide upon the characteristics of the emergent system. The inverse problem, i.e.~the inference or estimation of parameter values from observed data, is interesting from two points of view. First, the existence point of view, dealing with the question whether the system is able to  produce the observed dynamics for any parameter values. Second, the identifiability point of view, investigating invariance under change of parameter values and quantifying parameter uncertainty.
 
-\noindent In this paper, we present the \pkg{dMod} package which provides an \proglang{R} framework to deal with the inverse problem in dynamic systems. The particularity of the \pkg{dMod} approach is to provide and propagate accurate derivatives computed from symbolic expressions. This derivative information highly supports the convergence of optimization routines and provides the numerical stability required by sofisticated uncertainty analysis methods. Computational efficiency is guaranteed by automatic generation and integration of \proglang{C} code. The framework is object oriented (S3) and provides a variety of functions to set up dynamic models, observation functions and parameter transformations for multi-conditional parameter estimation.
+In this paper, we present the \proglang{R} package \pkg{dMod} which provides a  framework to deal with the inverse problem in dynamic systems. The particularity of the \pkg{dMod} approach is to provide and propagate accurate derivatives computed from symbolic expressions wherever possible. This derivative information highly supports the convergence of optimization routines and provides the numerical stability required by sofisticated uncertainty analysis methods. Computational efficiency is guaranteed by automatic generation and integration of \proglang{C} code. The framework is object oriented (S3) and provides a variety of functions to set up dynamic models, observation functions and parameter transformations for multi-conditional parameter estimation.
 
-\noindent The key elements of the framework and the methodology implemented in \pkg{dMod} are highlighted by an application on a three-compartment transporter model.
+The key elements of the framework and the methodology implemented in \pkg{dMod} are highlighted by an application on a three-compartment transporter model within this paper.
 
 
 
@@ -74,7 +74,11 @@ In a wide variety of research fields, dynamic modeling is employed as an instrum
 %% include your article here, just as usual
 %% Note that you should use the \pkg{}, \proglang{} and \code{} commands.
 \section{Introduction}
-	Dynamic models are found in various research fields, ranging from physics to biology or finance. In a dynamic model, the single terms correspond to mechanisms or processes which are combined to a whole, giving rise to a complex system. If the single terms are associated to parameters, parameter estimation can identify those processes of the complex system that are crucial to explain the observation. In that sense, parameter estimation can
+	Dynamic models are found in several research fields, ranging from physics to biology or finance. In all these fields, models are used to construct a link between theoretical concepts and empirical evidence. In a dynamic model, the single terms correspond to mechanisms or processes which are combined to a whole, giving rise to a complex system. If the single terms are associated to parameters, parameter estimation can identify those processes of the complex system that are crucial to explain the observation. In that sense, parameter estimation can be employed as an instrument to understand complex systems. Once, the link between observation and model is established, questions about the identifiability of parameters arise. The parameter space needs to be explored to see whether the estimate is unique and to determine confidence bounds.
+
+	The key requirement for parameter estimation is accurate and robust non-linear optimization. Many of the standard optimization routines implemented in \proglang{R} use derivative information. Indeed, if the objective function is sufficiently smooth, derivatives can considerably reduce the number of iterations and convergence is more reliable [REF]. However, the computation of derivatives in the context of ODE models holds some pit-falls [REF] which are e.g.~related to the step-size control of the integrator.  
+
+
 
 \section{Theoretical background}
 
@@ -92,7 +96,7 @@ In a wide variety of research fields, dynamic modeling is employed as an instrum
 
 A system of ordinary differential equation $\dot x = f(x, p, u, t)$ can be represented by a \code{character} vector of equations involving symbols for the states $x$ (coinciding with names of the vector), symbols for the parameters $p$, symbols for the forcings $u$ and the keyword \code{time} for $t$. The class provided by \pkg{dMod} for such objects is the \code{eqnvec} class which checks whether the character can be parsed and thus, can be interpreted as an equation.
 
-There are several ways to define the differential equations. An \code{eqnvec} of equations can be explicitly formulated, analogously to a \code{c()} command. Especially for chemical reactions it can be tideous to keep track of all gain and loss terms. Therefore, \pkg{dMod} provides the \code{eqnlist} class which encodes the ODE by a list of (1) state names, (2) rate expressions, (3) compartment volumes and (4) the stoichiometric matrix. Each reaction flux occurs only once and the gain and loss is represented by the coefficients in the stoichiometric matrix [REF]. \pkg{dMod} supports the read-in of a csv file with the stoichiometric matrix and rate expressions and provides a function \code{addReaction()} to construct an \code{eqnlist} object step-by-step and add further reactions to an already existing \code{eqnlist}. The conversion to the (differential) equations is done by \code{as.eqnvec()} which does all the bookkeeping of gain and loss terms and volume ratios due to compartment transitions.
+There are several ways to define the differential equations. An \code{eqnvec} of equations can be explicitly formulated, analogously to a \code{c()} command. Especially for chemical reactions it can be tideous to keep track of all gain and loss terms. Therefore, \pkg{dMod} provides the \code{eqnlist} class which encodes the ODE by a list of (1) state names, (2) rate expressions, (3) compartment volumes and (4) the stoichiometric matrix. Each reaction flux occurs only once and the gain and loss is represented by the coefficients in the stoichiometric matrix [REF]. \pkg{dMod} supports the read-in of a csv file with the stoichiometric matrix and rate expressions and provides a function \code{addReaction()} to construct an \code{eqnlist} object step-by-step or add further reactions to an already existing \code{eqnlist}. The conversion to the (differential) equations is done by \code{as.eqnvec()} which does all the bookkeeping of gain and loss terms and volume ratios due to compartment transitions.
 
 The paradigm of \pkg{dMod} is to make use of derivatives wherever possible. It is one of the core functionalities of the \pkg{cOde} package upon which \pkg{dMod} is based to augment a system of ODEs by its sensitivity equations. If many parameters are involved and the system consists of many states, the number of equations quickly grows and solving the equations can be considerably accelerated if compiled code is used. \pkg{dMod} provides the \code{odemodel} class. An object of class \code{odemodel} is generated from an \code{eqnlist} or \code{eqnvec}. In the background \proglang{C} code for the ODE and the combined system of ODE and sensitivity equations is generated, written into the working directory and compiled. The \code{odemodel} object keeps track of the shared objects and is the basis of a prediction function $x(t, p)$ which is generated by the \code{Xs()} command.
 
@@ -138,7 +142,7 @@ The \pkg{dMod} package allows to define transformations $\Phi$, see eq.~\eqref{e
 \begin{equation*}
 \verb!p <- P(eqnvec1, condition = "one") + P(eqnvec2, condition = "two")!. 
 \end{equation*}
-All symbols from \code{eqnvec1} and \code{eqnvec2} are collected and their union constitutes the symbols of $\theta$. The evaluation \code{p(theta)} returns a list of length two with inner parameters. The \code{"+"} operator can be applied consecutively to add condition by condition.
+All symbols from \code{eqnvec1} and \code{eqnvec2} are collected and their union constitutes the symbols of $\theta$. The evaluation \code{p(theta)} returns a list (of length two in the example) with inner parameters. The \code{"+"} operator can be applied consecutively to add condition by condition.
 
 Prediction- and observation functions are generalized to multiple conditions by the \code{"+"} operator, too. Mathematically speaking, they become
 \begin{align*}
@@ -156,9 +160,11 @@ All commands, \code{P()}, \code{Xs()}, \code{Y()}, etc.~can be executed with \co
 
 \subsection{Objective function}
 
-The aim of \pkg{dMod} is parameter estimation. The objective function to be minimized for this purpose is the weighted least squares function which is produced by the command \code{normL2(data, prdfn)} where \code{data} is a \code{datalist} object and \code{prdfn} is a prediction function. A \code{datalist} is a list of \code{data.frame}s providing time points, observables, measured values and uncertainties for each condition. The objective function is the final link in the chain of parameter transformations, prediction- and observation functions. It collects all derivative information and besides the objective value it computes gradient and Hessian. The standard optimizer employed within \pkg{dMod} is the \code{trust()} optimizer from the \pkg{trust} package. 
+The aim of \pkg{dMod} is parameter estimation. The objective function to be minimized for this purpose is the weighted least squares function which is produced by the command \code{normL2(data, prdfn)} where \code{data} is a \code{datalist} object and \code{prdfn} is a prediction function. A \code{datalist} is a list of \code{data.frame}s providing time points, observables, measured values and uncertainties for each condition. The \code{as.datalist()} command allows to construct a datalist from a \code{data.frame} as it is typically used for mixed effects models or plotting with \pkg{ggplot2}. 
 
-Objective functions can be added by the \code{"+"} operator, meaning the objective values, gradients and Hessians are added. Besides \code{normL2()}, functions like \code{constraintL2()} and \code{datapointL2()} produce objective functions, too. They allow to define parameter priors or treat data points as parameters.
+The objective function is the final link in the chain of parameter transformations, prediction- and observation functions. It collects all derivative information and besides the objective value it computes gradient and Hessian. The standard optimizer employed within \pkg{dMod} is the \code{trust()} optimizer from the \pkg{trust} package.
+
+Objective functions can be added by the \code{"+"} operator, meaning the objective values, gradients and Hessians are accumulated by summation. Besides \code{normL2()}, functions like \code{constraintL2()} and \code{datapointL2()} produce objective functions, too. They allow to define parameter priors or treat data points as parameters.
 
 
 \section{Three-compartment model of bile acid transport}
@@ -611,5 +617,6 @@ The same simulated data set has been fitted by the fully explit and the implicit
 \end{figure}
 The optima found by all three approaches are statistically compatible. The two implementations using the steady-state information show exactly the same profiles. Since one formulation is parameterized by \code{TCA_cell} whereas the other is parameterized by \code{TCA_tot}, the plot highlights one of the fundamental properties of the profile likelihood: invariance under reparameterization. In comparison to the profiles without steady-state information, the new profiles are narrower, meaning that the parameters are better identifiable. This was to be expected because we have reduced the dimension of the parameter space by one.
 
+\subsection{Prediction uncertainty and validation profiles}
 
 \end{document}
