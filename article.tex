@@ -25,7 +25,7 @@
 \Abstract{
 In a wide variety of research fields, dynamic modeling is employed as an instrument to learn and understand complex systems. The differential equations involved in this process are mostly non-linear and depend on many parameters which decide upon the characteristics of the emergent system. The inverse problem, i.e.~the inference or estimation of parameter values from observed data, is interesting from two points of view. First, the existence point of view, dealing with the question whether the system is able to  produce the observed dynamics for any parameter values. Second, the identifiability point of view, investigating invariance under change of parameter values and quantifying parameter uncertainty.
 
-In this paper, we present the \proglang{R} package \pkg{dMod} which provides a  framework to deal with the inverse problem in dynamic systems. The particularity of the \pkg{dMod} approach is to provide and propagate accurate derivatives computed from symbolic expressions wherever possible. This derivative information highly supports the convergence of optimization routines and provides the numerical stability required by sofisticated uncertainty analysis methods. Computational efficiency is guaranteed by automatic generation and integration of \proglang{C} code. The framework is object oriented (S3) and provides a variety of functions to set up dynamic models, observation functions and parameter transformations for multi-conditional parameter estimation.
+In this paper, we present the \proglang{R} package \pkg{dMod} building upon \pkg{cOde} to provide a  framework dealing with the inverse problem in dynamic systems. The particularity of the \pkg{dMod/cOde} approach is to provide and propagate accurate derivatives computed from symbolic expressions wherever possible. This derivative information highly supports the convergence of optimization routines and provides the numerical stability required by sofisticated uncertainty analysis methods. Computational efficiency is guaranteed by automatic generation and integration of \proglang{C} code. The framework is object oriented (S3) and provides a variety of functions to set up dynamic models, observation functions and parameter transformations for multi-conditional parameter estimation.
 
 The key elements of the framework and the methodology implemented in \pkg{dMod} are highlighted by an application on a three-compartment transporter model within this paper.
 
@@ -76,7 +76,14 @@ The key elements of the framework and the methodology implemented in \pkg{dMod} 
 \section{Introduction}
 	Dynamic models are found in several research fields, ranging from physics to biology or finance. In all these fields, models are used to construct a link between theoretical concepts and empirical evidence. In a dynamic model, the single terms correspond to mechanisms or processes which are combined to a whole, giving rise to a complex system. If the single terms are associated to parameters, parameter estimation can identify those processes of the complex system that are crucial to explain the observation. In that sense, parameter estimation can be employed as an instrument to understand complex systems. Once, the link between observation and model is established, questions about the identifiability of parameters arise. The parameter space needs to be explored to see whether the estimate is unique and to determine confidence bounds.
 
-	The key requirement for parameter estimation is accurate and robust non-linear optimization. Many of the standard optimization routines implemented in \proglang{R} use derivative information. Indeed, if the objective function is sufficiently smooth, derivatives can considerably reduce the number of iterations and convergence is more reliable [REF]. However, the computation of derivatives in the context of ODE models holds some pit-falls [REF] which are e.g.~related to the step-size control of the integrator.  
+	Although the problem of parameter estimation in non-linear dynamic systems is highly relevant and at the heart of statistical computing, up to today there are only two \proglang{R} packages published on the topic on the Comprehensive \proglang{R} Archive Network (CRAN): \pkg{FME} [REF] and \pkg{nlmeODE} [REF]. Both packages are built upon the \pkg{deSolve} package. 
+
+
+	The key requirement for parameter estimation is accurate and robust non-linear optimization. Many of the standard optimization routines implemented in \proglang{R} use derivative information. Indeed, if the objective function is sufficiently smooth, derivatives can considerably reduce the number of iterations and convergence is more reliable [REF]. However, the computation of derivatives in the context of ODE models holds some pit-falls [REF] which are e.g.~related to the step-size control of the integrator.
+	
+
+
+
 
 
 
@@ -618,5 +625,49 @@ The same simulated data set has been fitted by the fully explit and the implicit
 The optima found by all three approaches are statistically compatible. The two implementations using the steady-state information show exactly the same profiles. Since one formulation is parameterized by \code{TCA_cell} whereas the other is parameterized by \code{TCA_tot}, the plot highlights one of the fundamental properties of the profile likelihood: invariance under reparameterization. In comparison to the profiles without steady-state information, the new profiles are narrower, meaning that the parameters are better identifiable. This was to be expected because we have reduced the dimension of the parameter space by one.
 
 \subsection{Prediction uncertainty and validation profiles}
+
+Combining the steady-state constraint and two efflux experiments, one with closed canaliculi and the other with open canaliculi, we could fully identify the rate parameters \code{import}, \code{export_cana} and \code{reflux}. The amount parameter \code{TCA_tot} is fully coupled with the scaling parameter \code{s} such that both are structurally non-identifiable. The parameters \code{export_sinus} and \code{reflux_open} are practically non-identifiable since both parameters cannot be constrained to a finite interval with 95\% confidence.
+
+Next, we investigate the possibility to predict cellular amounts of TCA, \code{TCA_cell}, despite the non-identifiability of parameters. Certainly, it is necessary to fix the scale by including the knowledge about the total TCA amount which is 1. A prediction profile is computed based on a test data point
+
+\begin{CodeChunk}
+\begin{CodeInput}
+obj.validation <- datapointL2(name = "TCA_cell", 
+			      time = 41, 
+			      value = "d1", 
+			      sigma = .002, 
+			      condition = "standard")
+\end{CodeInput}
+\end{CodeChunk}
+
+for the dynamic state \code{TCA_cell} at time $t = 41$ under the "standard" condition. The uncertainty $\sigma = 0.002$ is set to a small value, i.e. below 1\% of the prediction value. The \code{datapointL2()} command returns an objective function which evaluates the model prediction\footnote{Several objective function combined by the \code{"+"} operator share the same environment. Thus, the prediction computed by the first objective function can be evaluated by all other functions to come.} and computes the least-squares function of the test datapoint, returning derivatives for the data-point parameter \code{d1}.
+
+The derivative information for \code{d1} is used by the \code{profile()} function to compute the profile likelihood with respect to this parameter:
+
+\begin{CodeChunk}
+\begin{CodeInput}
+myfit <- trust(obj + obj.validation, 
+	       parinit = c(d1 = 1, bestfit[-7]), 
+	       fixed = c(TCA_tot = log(1)), 
+	       rinit = 1, rmax = 10)
+
+profile_prediction <- profile(obj + obj.validation, 
+			      myfit$argument, "d1", limits = c(-5, 5), 
+			      fixed = c(TCA_tot = log(1)))
+\end{CodeInput}
+\end{CodeChunk}
+
+First, we obtain the new parameter estimate \code{myfit$argument} with the new data-point parameter \code{d1} for fixed \code{TCA_tot} amount. The \code{profile()} function must be informed about the fixed parameter, too. The result is shown in Figure~\ref{fig:validation}A.  
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width = \textwidth]{images/figure9}
+	\caption{Validation profile and confidence bands for model prediction. (A) The profile likelihood for the data point parameter \code{d1} describing \code{TCA\_cell} at time point $t = 41$ was computed. (B) The same computation for different time points yields 95\% confidence bands on the prediction of \code{TCA\_cell}.}
+	\label{fig:validation}
+\end{figure}
+
+Changing the data-point parameter \code{d1}, the model is quickly forced to follow the new data point. This is apparent from the "validation" contribution to the total objective value. It remains small with respect to the "data" contribution originating from all other data points. Forcing the model prediction to deviate more than $0.01$ from the original one, the profile exceeds the 95\% confidence threshold providing a confidence interval for the prediction itself. The procedure has been repeated for several time points to produce a confidence band for the cellular TCA prediction, shown in Figure~\ref{fig:validation}B. The 95\% confidence band is closed towards small and large amounts. 
+
+In summary, we find that the prediction of cellular TCA amounts is highly precise despite the non-identifiability of the \code{export_sinus} and \code{reflux_open} parameters.
 
 \end{document}
