@@ -2,6 +2,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage[]{amsmath}
 \usepackage{amssymb}
+\usepackage{enumerate}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -25,7 +26,7 @@
 \Abstract{
 In a wide variety of research fields, dynamic modeling is employed as an instrument to learn and understand complex systems. The differential equations involved in this process are mostly non-linear and depend on many parameters which decide upon the characteristics of the emergent system. The inverse problem, i.e.~the inference or estimation of parameter values from observed data, is interesting from two points of view. First, the existence point of view, dealing with the question whether the system is able to  produce the observed dynamics for any parameter values. Second, the identifiability point of view, investigating invariance under change of parameter values and quantifying parameter uncertainty.
 
-In this paper, we present the \proglang{R} package \pkg{dMod} building upon \pkg{cOde} to provide a  framework dealing with the inverse problem in dynamic systems. The particularity of the \pkg{dMod/cOde} approach is to provide and propagate accurate derivatives computed from symbolic expressions wherever possible. This derivative information highly supports the convergence of optimization routines and provides the numerical stability required by sofisticated uncertainty analysis methods. Computational efficiency is guaranteed by automatic generation and integration of \proglang{C} code. The framework is object oriented (S3) and provides a variety of functions to set up dynamic models, observation functions and parameter transformations for multi-conditional parameter estimation.
+In this paper, we present the \proglang{R} package \pkg{dMod} building upon \pkg{cOde} to provide a  framework dealing with the inverse problem in dynamic systems. The particularity of the \pkg{dMod/cOde} approach is to provide and propagate accurate derivatives computed from symbolic expressions wherever possible. This derivative information highly supports the convergence of optimization routines and provides the numerical stability required by sofisticated uncertainty analysis methods. Computational efficiency is guaranteed by automatic generation and integration of \proglang{C} code. The framework is object oriented (S3) and provides a variety of functions to set up dynamic models, observation functions and parameter transformations for multi-conditional parameter estimation. 
 
 The key elements of the framework and the methodology implemented in \pkg{dMod} are highlighted by an application on a three-compartment transporter model within this paper.
 
@@ -76,28 +77,50 @@ The key elements of the framework and the methodology implemented in \pkg{dMod} 
 \section{Introduction}
 Dynamic models are found in several research fields, ranging from physics to biology or finance. In all these fields, models are used to construct a link between theoretical concepts and empirical evidence. In a dynamic model, the single terms correspond to mechanisms or processes which are combined to a whole, giving rise to a complex system. If the single terms are associated to parameters, parameter estimation can identify those processes which are crucial to explain the observation. In that sense, parameter estimation can be employed as an instrument to \textit{understand} complex systems. Once, the link between observation and model is established, questions about the identifiability of parameters arise. The parameter space needs to be explored to analyze whether the estimate is unique and to determine confidence bounds.
 
-Although the problem of parameter estimation in non-linear dynamic systems is highly relevant and at the heart of statistical computing, to this day there are not more than two \proglang{R} packages published on the topic on the Comprehensive \proglang{R} Archive Network (CRAN), namely \pkg{FME} \citep{FME} and \pkg{nlmeODE} \citep{nlmeODE}. Both packages are built upon the \pkg{deSolve} package \citep{deSolve}.
+Although the problem of parameter estimation in non-linear dynamic systems is highly relevant and at the heart of statistical computing, to this day there are not more than four \proglang{R} packages published on the topic on the Comprehensive \proglang{R} Archive Network (CRAN), namely \pkg{FME} \citep{FME}, \pkg{nlmeODE} \citep{nlmeODE}, \pkg{mkin} \citep{mkin} and \pkg{scaRabee} \citep{scaRabee}. All packages have in common that they are built upon the \pkg{deSolve} package \citep{deSolve}.
+The packages \pkg{mkin} and \pkg{FME} support ODEs defined by compiled code where \pkg{mkin} provides tools to autogenerate the \proglang{C} code and compile it using the \pkg{inline} package. For model fitting and uncertainty analysis, \pkg{mkin} fully resorts to the functionality of \pkg{FME}.
+Concerning model fitting, \pkg{FME} and \pkg{nlmeODE} (with \pkg{nlme} in the background) use deterministic derivative-based optimizers by default, i.e.~either Levenberg-Marquardt or Newton methods provided by \code{nls.lm()}, \code{optim()} or \code{nlmimb()}. Although all these optimizers support gradient or Hessian information as input, only the \pkg{nlmeODE} package provides an option to augment the ODE by its sensitivity equations to generate derivates for the residuals. By default, sensitivities are computed by finite differences. Last but not least, the \pkg{scaRabee} package uses the Nelder-Mead optimization algorithm which is derivative-free but needs many iterations until convergence.
+In all packages, uncertainty analysis is by default based on the variance-covariance matrix, i.e.~on the inverse Hessian matrix of the least squares function. For non-linear models, this method provides a good approximation only if parameters are identifiable and the data is highly informative. If these conditions are not met, more sofisticated methods like e.g.~Markov chain Monte Carlo (MCMC) sampling, implemented in \pkg{FME}, are required.
+The strength of \pkg{scaRabee} and especially \pkg{nlmeODE} is multi-conditional fitting. This means that the same model with the same parameters but different forcings to reflect experimental conditions is fitted simultaneously to the condition-specific data sets. In the context of mixed-effects modeling as provided by \pkg{nlmeODE}, parameters can be grouped in fixed effects (same parameters over all conditions) and random effects (parameters are different between conditions).  
+
+In this paper we present \pkg{dMod}, an \proglang{R} package on dynamic modeling and parameter estimation. The aim and core functionality of \pkg{dMod} is
+\begin{enumerate}[(i)]
+	\item facilitated set-up of dynamic models with automated \proglang{C} code generation for fast simulation of model predictions and model sensitivities,
+	\item flexible set-up of general parameter transformations (explicit or implicit) and observation functions, allowing for the implementation of multiple experimental conditions similar to mixed-effects modeling,
+	\item parameter estimation based on trust-region optimization of the negative log-likelihood, making use of the sensitivity equations of the dynamic system and of symbolic derivatives of the observation- and parameter transformation functions,
+	\item identifiabiliy and uncertainty analysis based on the profile-likelihood method to determine confidence intervals for parameters and predictions.
+\end{enumerate}
+
+The core functionality is extended by two symbolic methods implemented in \proglang{Python} and interfaced via the \pkg{rPython} package: identifiability and observability analysis based on Lie-group symmetries \citep{merkt2015higher} and steady-state constraints for parameter estimation \citep{rosenblatt2016customized}.
+
+The strict implementation of capabilities to generate and propagate derivatives on a compiled-code level distinguishes \pkg{dMod} from other modeling frameworks as discussed above. Most of the standard optimization routines implemented in \proglang{R} need derivative information. However, the computation of derivatives in the context of ODE models holds some pit-falls. The accuracy of sensitivities obtained from finite differences can be insufficient because the step control of the integrator presents an additional source of numeric inaccuracy. Even for numeric methods circumventing this problem, e.g.~complex-step derivatives \citep{squire1998using}, the use of sensitivity equations is still beneficial judging from the accuracy vs.~computational cost ratio. See \citep{raue2013lessons} for a comparison of methods.
+
+Parameter estimation in dynamic models if frequently confronted with the issue of non-identifiable parameters. In some cases, non-identifiability has structural reasons. The differential equations bear certain symmetries and these can or cannot be broken by observation functions. A functional relationship between parameters that leaves the observation invariant is the consequence of the latter. In other cases, the data allows to determine a unique optimum but other solutions, although worse, cannot be statistically rejected. The \pkg{dMod} package deals with parameter identifiability and parameter uncertainty by the profile-likelihood method \citep{murphy2000profile, kreutz2013profile}. The method has proven especially useful in the case of non-identifiable parameters where results obtained from both, the quadratic approximation by the variance-covariance matrix and MCMC sampling can be misleading \citep{raue2013joining}. Besides parameter uncertainties, the profile likelihood method allows to estimate prediction uncertainty, it supports the planning of new informative experiments or suggest possible model reductions.
+
+The key methods implemented in \pkg{dMod} are illustrated in great detail on a dynamic model of bile acid flow. The example is a show-case of how modeling \textit{is} a dynamic process, using the analysis tools implemented in \pkg{dMod} to predict, plan new experiments, combine data frome different experiments and include non-linear parameter constraints to improve parameter identifiability. Thereby, we show that \pkg{dMod} is a full-grown, flexible modeling environment, fast, thanks to compiled code, reliable, thanks to symbolic derivatives, and accurate, thanks to advanced statistical methods. 
+
+The paper is organized as follows: Section~\ref{sec:theory} introduces the mathematical set-up of dynamic modeling, symmetries in dynamic systems, parameter estimation by the maximum-likelihood method and the profile likelihood. Section~\ref{sec:implementation} discusses the implementaton and design principles behind the \pkg{dMod} software. The functionality of \pkg{dMod} is presented in Section~\ref{sec:example} on the example of bile acid flow in a three-compartment model and finally, Section~\ref{sec:extensions} discusses the two \proglang{Python} extensions coming with \pkg{dMod}.
 
 
-The key requirement for parameter estimation is accurate and robust non-linear optimization. Many of the standard optimization routines implemented in \proglang{R} use derivative information. Indeed, if the objective function is sufficiently smooth, derivatives can considerably reduce the number of iterations and convergence is more reliable \citep{raue2013lessons}. However, the computation of derivatives in the context of ODE models holds some pit-falls which are e.g.~related to the step-size control of the integrator.
-	
-
-
-
+% Rechenzeit erwähnen
 
 
 
 \section{Theoretical background}
+\label{sec:theory}
 
 \subsection{Ordinary differential equation models}
 
 \subsection{Maximum-likelihood method and non-linear optimization}
+
+% Hier auf Maximum-Likelihood vs. least-squares function eingehen.
 
 \subsection{Uncertainty analysis}
 
 
 
 \section{Implementation and design principles}
+\label{sec:implementation}
 
 \subsection{Model formulation}
 
@@ -175,6 +198,7 @@ Objective functions can be added by the \code{"+"} operator, meaning the objecti
 
 
 \section{Three-compartment model of bile acid transport}
+\label{sec:example}
 
 The following model is a simplified version of the dynamic model on bile acid transport published in [REF]. Bile acids are produced in the liver. They are necessary for the digestion of fat and oil. In the liver, bile acids are taken up in hepatocytes (liver cells) by specific transporter molecules. Clearance occurs either via canalicular or sinusoidal export, i.e.~export to the bile transportation system of bile canaliculi or the intercellular space.
 
@@ -670,6 +694,8 @@ Changing the data-point parameter \code{d1}, the model is quickly forced to foll
 
 In summary, we find that the prediction of cellular TCA amounts is highly precise despite the non-identifiability of the \code{export_sinus} and \code{reflux_open} parameters.
 
+\section{Extensions of dMod}
+\label{sec:extensions}
 
 \bibliography{mybib}{}
 
