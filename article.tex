@@ -128,9 +128,9 @@ This expression also holds for more general systems that do not follow mass acti
 The aim of parameter estimation will be the determination of the free parameters of the system. Besides the rate constants, they include parameters of the forcings $u(t)$ and initial values of the states at time point zero. It is generally assumed that the stoichiometry of the system is known. 
 
 
-\subsection{Maximum-likelihood method and non-linear optimization}
+\subsection{Maximum-likelihood method}
 
-\paragraph{Parameter estimation} is a common task in statistics. It describes the process of inferring parameter values or parameter ranges of a statistical model based on observed data. Over decades, appropriate estimators have been developed for different problem classes. The principle of maximum likelihood allows to derive an estimator which is especially suited for applications where the distribution of the observation noise is known. This knowledge about the structure of the noise constitutes an additional information that makes the maximum-likelihood estimator (MLE) \textit{efficient}, i.e.~from all unbiased estimators the MLE has the lowest variance. Other properties of maximum-likelihood estimation are \textit{consistency}, i.e.~the true parameter is reached in the limit of infinite data-sample size, and \textit{asymptotic normality}, i.e.~in the limit of infinite data the MLE follows a multivariate normal distribution. See \citep{azzalini1996statistical} for an introduction to likelihood theory.
+Parameter estimation is a common task in statistics. It describes the process of inferring parameter values or parameter ranges of a statistical model based on observed data. Over decades, appropriate estimators have been developed for different problem classes. The principle of maximum likelihood allows to derive an estimator which is especially suited for applications where the distribution of the observation noise is known. This knowledge about the structure of the noise constitutes additional information that makes the maximum-likelihood estimator (MLE) \textit{efficient}, i.e.~from all unbiased estimators the MLE has the lowest variance. Other properties of maximum-likelihood estimation are \textit{consistency}, i.e.~the true parameter is reached in the limit of infinite data-sample size, and \textit{asymptotic normality}, i.e.~in the limit of infinite data the MLE follows a multivariate normal distribution. See \citep{azzalini1996statistical} for an introduction to likelihood theory.
 
 Maximum-likelihood estimation is based on the maximization of the likelihood function $L(\theta) = \phi(y^D|\theta)$. Here, $\phi$ is the joint probability density for a vector of observations $y$ evaluated at the point $y = y^D$, the vector of data points. The distribution $\phi$ depends parametrically on model parameters $\theta$. The maximum-likelihood estimator $\hat\theta$ is defined as
 \begin{align*}
@@ -138,19 +138,22 @@ Maximum-likelihood estimation is based on the maximization of the likelihood fun
 \end{align*}
 meaning that $\hat\theta$ is an extremum estimator. Depending on the model class and the probability distribution $\phi$, maximization of the likelihood can be a challenge beyond the scope of analytical methods. Numerical optimization methods help to solve the maximization problem in practical applications.
 
-The easiest and one of the most frequent situations is when $\phi\sim\mathcal N(\mu(\theta), \Sigma)$ follows a normal distribution. When measurements are statistically independent, the variance-covariance matrix $\Sigma$ is diagonal and $\phi$ factorizes. The Likelihood function becomes
+The easiest and one of the most frequent situations is when $\phi$ follows a normal distribution, $\phi\sim\mathcal N(\mu(\theta), \Sigma)$. When measurements are statistically independent, the variance-covariance matrix $\Sigma$ is diagonal and $\phi$ factorizes. The Likelihood function becomes
 \begin{align}
 	L(\theta) &= \prod_i \frac{1}{\sqrt{2\pi\sigma_i^2}} e^{-\frac{\mu_i(\theta)^2}{2\sigma_i^2}} 
 	\label{eq:likelihood}
 \end{align}
 The connection between the statistical model and the observed data is given by $\mu_i(\theta) = y_i(\theta) - y_i^D$. Taking twice the negative logarithm of eq.~\eqref{eq:likelihood} yields
 \begin{align}
-	l(\theta) = -2\log L(\theta) &= \sum_i \left[\left(\frac{y_i(\theta) - y_i^D}{\sigma_i}\right)^2 + \log(2\pi\sigma_i^2)\right].
+	l(\theta) = -2\log L(\theta) &= \sum_i \left[\left(\frac{y_i(\theta) - y_i^D}{\sigma_i}\right)^2 + \log(2\pi\sigma_i^2)\right],
 	\label{eq:nll}
 \end{align}
-Assuming that the data uncertainties $\sigma_i$ are known, eq.~\eqref{eq:nll} is the weighted least-squares function shifted by a constant. For unknown $\sigma_i$, eq.~\eqref{eq:nll} can be optimized with respect to $\theta$ and $\sigma$ jointly, yielding the MLE $(\hat\theta, \hat\sigma)$.
+thus converting the maximization of $L(\theta)$ to a minimization of $l(\theta)$. 
+Assuming that the data uncertainties $\sigma_i$ are known, eq.~\eqref{eq:nll} is the weighted least-squares function shifted by a constant. For unknown $\sigma_i$, eq.~\eqref{eq:nll} can be optimized with respect to $\theta$ and $\sigma$ jointly, yielding the MLE $\hat\theta^{\prime} = (\hat\theta, \hat\sigma)$.
 
-\paragraph{Numerical optimization} is a diverse field with as many algorithms as there are optimization problems around.  
+\subsection{Non-linear optimization}
+
+Numerical optimization is a diverse field with as many algorithms as there are optimization problems around.  
 
 
 
