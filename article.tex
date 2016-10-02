@@ -114,18 +114,44 @@ The paper is organized as follows: Section~\ref{sec:theory} introduces the mathe
 \label{sec:theory}
 
 \subsection{Ordinary differential equation models}
-Object of the dynamic modeling are systems with states $x$, usually quantifying the involved species, that evolve over time as e.g. given by chemical reaction networks. The time evolution of the states is expressed via a set of ODEs, $\dot x = f(x)$. 
-Typical examples follow the law of mass action:
+Dynamic models describe systems with states $x$, usually quantifying the involved species, interacting and evolving over time. %  as e.g. given by chemical reaction networks. 
+The time evolution of the states is expressed via a set of ODEs, $\dot x = f(x)$. Although constituting quite a special class of dynamic systems, chemical reaction networks formulated by the law of mass action allow for surprisingly general applications. Typical ODE examples derived from the law of mass action are:
 \begin{itemize}
 	\item $\dot x_A = k_p$ constant production of $x_A$ ($\emptyset \rightarrow A$)
-	\item $\dot x_C = k_c \cdot x_A x_B = - \dot x_A = - \dot x_B$ complex formation ($A+B \rightarrow C$)
-	\item $\dot x_C = - k_d x_C$ constant degradation of $x_C$ ($C \rightarrow \emptyset$)
+	\item $\dot x_C = k_c \cdot x_A \cdot x_B = - \dot x_A = - \dot x_B$ complex formation ($A+B \rightarrow C$)
+	\item $\dot x_C = - k_d \cdot x_C$ constant degradation of $x_C$ ($C \rightarrow \emptyset$)
 \end{itemize}
-generally written as $\dot x_l = \sum_{j = 1\dots m}  k_{j} \prod_{i = 1\dots n} \nu_{i,j} x_i^{\nu_{i,j}}$ for a system of $n$ states and $m$ reactions with rate constants $p = \{ k_j, j = 1\dots m\}$ and stoichiometric constants $\nu_{i,j} \in \mathbb{Z}$. 
-An even more general expression of the system is given by $\dot x = S v(x,p)$ with the stoichiometry matrix $S$ containing the stoichiometric constants $\nu_{i,j}$ and the flux vector $v(x,p)$.
-This expression also holds for more general systems that do not follow mass action kinetics. Moreover the system may be explicitly time-dependent and it may contain forcings $u(t)$ which e.g. describe the external stimulation of the system with a compound, resulting in the general form: \begin{align*}\dot x = S \cdot v(x,p,u,t).\end{align*} 
+generally written as 
+\begin{align}
+	\dot x = \underbrace{k_0 \left(\prod x_i^{\nu_i}\right)}_{v_0(x, k_0)} (\nu' - \nu) \quad\leftrightarrow\quad (\nu_1 X_1 + \dots + \nu_n X_n \longrightarrow \nu'_1 X_1 + \dots + \nu'_n X_n)
+	\label{eq:ma}
+\end{align}
+where $X_1, \dots, X_n$ are the species involved, $\nu$ and $\nu'$ encode the stoichiometry of the reaction and $k_0$ is the reaction rate. When several reactions are involved, eq.~\eqref{eq:ma} generalizes to 
+\begin{align}
+	\dot x = S\cdot v(x, k)
+	\label{eq:Sv}
+\end{align}
+%$\dot x_l = \sum_{j = 1\dots m}  k_{j} \prod_{i = 1\dots n} \nu_{i,j} x_i^{\nu_{i,j}}$ for a system of $n$ states and $m$ reactions with rate constants $p = \{ k_j, j = 1\dots m\}$ and stoichiometric constants $\nu_{i,j} \in \mathbb{Z}$. 
+%An even more general expression of the system is given by $\dot x = S v(x,p)$ 
+with the stoichiometry matrix $S$
+%containing the stoichiometric constants $\nu_{i,j}$ 
+obtained from the collection of vectors $\nu' - \nu$ for reactions $1, \dots, r$,
+and the flux vector $v(x,k)\in\mathbb R^{r}$.
+Eq.~\eqref{eq:Sv} also holds for general ODEs that do not follow from mass action kinetics. Moreover the system may be explicitly time-dependent and may contain forcings $u(t)$ which e.g.~describe the external stimulation of the system. Last but not least, the solution of eq.~\eqref{eq:Sv} depends on initial values $x_0 = x(t = 0)$. 
 
-The aim of parameter estimation will be the determination of the free parameters of the system. Besides the rate constants, they include parameters of the forcings $u(t)$ and initial values of the states at time point zero. It is generally assumed that the stoichiometry of the system is known. 
+
+%$\dot x = S \cdot v(x,k,u,t)$.
+%The aim of parameter estimation will be the determination of the free parameters of the system. Besides the rate constants, they include parameters of the forcings $u(t)$ and initial values of the states at time point zero. It is generally assumed that the stoichiometry of the system is known. 
+
+% Beobachtungsfunktion einführen
+
+% Eventuell of multi-condition prediction
+
+% Statistical model um Überleitung zum nächsten Abschnitt zu machen
+
+
+
+
 
 
 \subsection{Maximum-likelihood method and non-linear optimization}
