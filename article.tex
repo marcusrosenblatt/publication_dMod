@@ -169,7 +169,7 @@ The easiest and one of the most frequent situations is when $\phi$ follows a nor
 	L(\theta) &= \prod_i \frac{1}{\sqrt{2\pi\sigma_i^2}} e^{-\frac{\mu_i(\theta)^2}{2\sigma_i^2}} 
 	\label{eq:likelihood}
 \end{align}
-The connection between the statistical model and the observed data is given by $\mu_i(\theta) = y_i(\theta) - y_i^D$. Taking twice the negative logarithm of eq.~\eqref{eq:likelihood} yields
+The connection between the statistical model and the observed data is given by $\mu_i(\theta) = y_i(\theta) - y_i^D$. Taking twice the negative logarithm, eq.~\eqref{eq:likelihood} turns into
 \begin{align}
 	l(\theta) = -2\log L(\theta) &= \sum_i \left[\left(\frac{y_i(\theta) - y_i^D}{\sigma_i}\right)^2 + \log(2\pi\sigma_i^2)\right],
 	\label{eq:nll}
@@ -179,9 +179,25 @@ Assuming that the data uncertainties $\sigma_i$ are known, eq.~\eqref{eq:nll} is
 
 \subsection{Non-linear optimization}
 
-Numerical optimization is a diverse field with as many algorithms as there are optimization problems around.  
+Numerical optimization is a diverse field with as many algorithms as there are optimization problems around. For our application, derivative-based methods and in particular the Newton method plays a major role.
 
+Optimization by the Newton method attempts to iteratively find the root of the gradient $\nabla l (\theta)$ by the recursion
+\begin{align}
+	\theta^{(n+1)} = \theta^{(n)} - Hl(\theta)^{-1}\nabla l(\theta),
+	\label{eq:newton}
+\end{align}
+where $Hl(\theta)$ denotes the Hessian, i.e.~the matrix of second derivatives of $l(\theta)$. The fact that for normally distributed noise the log-likelihood is a least squares function, has a big advantage: gradient and (approximate) Hessian can be computed from first-order derivatives,
+\begin{align}
+	\nabla l(\theta) = 2 r(\theta) J(\theta) \quad\quad Hl(\theta) \approx 2 J(\theta)^T J(\theta),
+	\label{}
+\end{align}
+with the weighted residual vector $r_i(\theta) = \frac{y_i(\theta) - y_i^D}{\sigma_i}$ and its first derivative, the Jacobian matrix 
+\begin{align}
+	J_{ij}(\theta) = \frac{\partial r_i}{\partial \theta_j}(\theta) = \frac{1}{\sigma_i} \frac{\partial y_i}{\partial \theta_j}(\theta). 
+\end{align}
+Consequently, first model sensitivities $\frac{\partial y_i}{\partial\theta_j}$ are sufficient to compute gradient and Hessian in good approximation.
 
+The Newton recursion, eq.~\eqref{eq:newton}, converges in one iteration if $l(\theta)$ is a quadratic form. However, $l(\theta)$ is only quadratic if the model $y(\theta)$ is linear in $\theta$ which is usually not the case for ODE models. On the other hand, each smooth function, no matter if quadratic or not, can be approximated by a quadratic function based on its Taylor series. Depending on the function's shape, the \textit{trust region}, i.e.~the region where $l(\theta)$ is well approximated, can become quite small. Accordingly, a Newton step pointing far beyond this region could be misleading and not helpful for optimization. This is the idea behind trust-region optimization \citep{wright1999numerical}. In each iteration, the trust-region radius is adjusted and the optimization problem restricted to the trust region is solved. For parameter estimation in ODE models this has the advantage that the parameter changes are constricted and single optimization steps into parameter regions where the ODE cannot be numerically solved any more  become less frequent.
 
 % Hier auf Maximum-Likelihood vs. least-squares function eingehen.
 
