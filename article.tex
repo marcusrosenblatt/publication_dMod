@@ -121,12 +121,12 @@ The time evolution of the states is expressed via a set of ODEs, $\dot x = f(x)$
 	\item $\dot x_C = k_c \cdot x_A \cdot x_B = - \dot x_A = - \dot x_B$ complex formation ($A+B \rightarrow C$)
 	\item $\dot x_C = - k_d \cdot x_C$ constant degradation of $x_C$ ($C \rightarrow \emptyset$)
 \end{itemize}
-generally written as 
+each generally written as 
 \begin{align}
 	\dot x = \underbrace{k_0 \left(\prod x_i^{\nu_i}\right)}_{v_0(x, k_0)} (\nu' - \nu) \quad\leftrightarrow\quad (\nu_1 X_1 + \dots + \nu_n X_n \longrightarrow \nu'_1 X_1 + \dots + \nu'_n X_n)
 	\label{eq:ma}
 \end{align}
-where $X_1, \dots, X_n$ are the species involved, $\nu$ and $\nu'$ encode the stoichiometry of the reaction and $k_0$ is the reaction rate. When several reactions are involved, eq.~\eqref{eq:ma} generalizes to 
+where $X_1, \dots, X_n$ are the $n$ species involved, $\nu$ and $\nu'$ encode the stoichiometry of the reaction and $k_0$ is the reaction rate. When several reactions are involved, eq.~\eqref{eq:ma} generalizes to 
 \begin{align}
 	\dot x = S\cdot v(x, k)
 	\label{eq:Sv}
@@ -137,22 +137,15 @@ with the stoichiometry matrix $S$
 %containing the stoichiometric constants $\nu_{i,j}$ 
 obtained from the collection of vectors $\nu' - \nu$ for reactions $1, \dots, r$,
 and the flux vector $v(x,k)\in\mathbb R^{r}$.
-Eq.~\eqref{eq:Sv} also holds for general ODEs that do not follow from mass action kinetics. Moreover the system may be explicitly time-dependent and may contain forcings $u(t)$ which e.g.~describe the external stimulation of the system. Last but not least, the solution of eq.~\eqref{eq:Sv} depends on initial values $x_0 = x(t = 0)$. 
+Eq.~\eqref{eq:Sv} also holds for general ODEs that do not follow from mass action kinetics. Moreover the system may be explicitly time-dependent and may contain forcings $u(t)$ which e.g.~describe the external stimulation of the system, $\dot x = S \cdot v(x,k,u,t)$. %Last but not least, the solution of eq.~\eqref{eq:Sv} depends on initial values $x_0 = x(t = 0)$. 
 
-
-%$\dot x = S \cdot v(x,k,u,t)$.
-%The aim of parameter estimation will be the determination of the free parameters of the system. Besides the rate constants, they include parameters of the forcings $u(t)$ and initial values of the states at time point zero. It is generally assumed that the stoichiometry of the system is known. 
-
-% Beobachtungsfunktion einführen
+Often the experimentally observed quantities $y$ do not directly correspond to the species $x$ described by the model, but are obtained via an observation function $g: \mathbb{R}^n \rightarrow \mathbb{R}^m$,  $y = g(x)$. Typical examples are unknown scalings and offsets in the measurement $y = c_s \cdot x + c_o$ or the joint measurement of several species $y_i = \sum_j c_j x_j$.   \\
+The model prediction is therefore obtained by evaluating the observation function on the integrated ODEs, given a set of free parameters $\theta$ of the system. The parameters $\theta$ contain the rate constants, initial values $x_0 = x(t=0)$ and additional parameters included in the prediction function and forcings. It is generally assumed that the stoichiometry of the system is known. \\
+Besides the model predition itself, also the sensitivity of the prediction to changes in the parameter values, $\frac{\partial y}{\partial \theta}$, is of interest. Sensitivity equations can be directly inferred  
 
 % Eventuell of multi-condition prediction
 
 % Statistical model um Überleitung zum nächsten Abschnitt zu machen
-
-
-
-
-
 
 \subsection{Maximum-likelihood method}
 
