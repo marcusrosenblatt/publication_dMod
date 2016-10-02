@@ -4,6 +4,8 @@
 \usepackage{amssymb}
 \usepackage{enumerate}
 
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% declarations for jss.cls %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -13,7 +15,8 @@
 \author{Daniel Kaschek\\University of Freiburg \And
 	Marcus Rosenblatt\\University of Freiburg \AND
 	Wolfgang Mader\\University of Freiburg \And
-	Mirjam Fehling-Kaschek\\University of Freiburg}
+	Mirjam Fehling-Kaschek\\University of Freiburg \And
+	Jens Timmer\\University of Freiburg}
 
 \title{Dynamic Modeling, Parameter Estimation and Uncertainty Analysis in \proglang{R}}
 
@@ -26,7 +29,7 @@
 \Abstract{
 In a wide variety of research fields, dynamic modeling is employed as an instrument to learn and understand complex systems. The differential equations involved in this process are mostly non-linear and depend on many parameters which decide upon the characteristics of the emergent system. The inverse problem, i.e.~the inference or estimation of parameter values from observed data, is interesting from two points of view. First, the existence point of view, dealing with the question whether the system is able to  produce the observed dynamics for any parameter values. Second, the identifiability point of view, investigating invariance under change of parameter values and quantifying parameter uncertainty.
 
-In this paper, we present the \proglang{R} package \pkg{dMod} building upon \pkg{cOde} to provide a  framework dealing with the inverse problem in dynamic systems. The particularity of the \pkg{dMod/cOde} approach is to provide and propagate accurate derivatives computed from symbolic expressions wherever possible. This derivative information highly supports the convergence of optimization routines and provides the numerical stability required by sofisticated uncertainty analysis methods. Computational efficiency is guaranteed by automatic generation and integration of \proglang{C} code. The framework is object oriented (S3) and provides a variety of functions to set up dynamic models, observation functions and parameter transformations for multi-conditional parameter estimation. 
+In this paper, we present the \proglang{R} package \pkg{dMod} providing a framework for dealing with the inverse problem in dynamic systems. The particularity of the \pkg{dMod} approach is to provide and propagate accurate derivatives computed from symbolic expressions wherever possible. This derivative information highly supports the convergence of optimization routines and enhances the numerical stability required by sofisticated uncertainty analysis methods. Computational efficiency is guaranteed by automatic generation and integration of \proglang{C} code. The framework is object oriented (S3) and provides a variety of functions to set up dynamic models, observation functions and parameter transformations for multi-conditional parameter estimation. 
 
 The key elements of the framework and the methodology implemented in \pkg{dMod} are highlighted by an application on a three-compartment transporter model within this paper.
 
@@ -75,12 +78,12 @@ The key elements of the framework and the methodology implemented in \pkg{dMod} 
 %% include your article here, just as usual
 %% Note that you should use the \pkg{}, \proglang{} and \code{} commands.
 \section{Introduction}
-Dynamic models are found in several research fields, ranging from physics to biology or finance. In all these fields, models are used to construct a link between theoretical concepts and empirical evidence. In a dynamic model, the single terms correspond to mechanisms or processes which are combined to a whole, giving rise to a complex system. If the single terms are associated to parameters, parameter estimation can identify those processes which are crucial to explain the observation. In that sense, parameter estimation can be employed as an instrument to \textit{understand} complex systems. Once, the link between observation and model is established, questions about the identifiability of parameters arise. The parameter space needs to be explored to analyze whether the estimate is unique and to determine confidence bounds.
+Dynamic models are found in several research fields, such as physics, biology or finance. In all these fields, models are used to construct a link between theoretical concepts and empirical evidence. In a dynamic model, the single terms correspond to mechanisms or processes which are combined to a whole, giving rise to a complex system. If the single terms are associated to parameters, parameter estimation can identify those processes which are crucial to explain the observation. In that sense, parameter estimation can be employed as an instrument to \textit{understand} complex systems. Once, the link between observation and model is established, questions about the identifiability of parameters arise. The parameter space needs to be explored to analyze whether the estimate is unique and to determine confidence bounds.
 
 Although the problem of parameter estimation in non-linear dynamic systems is highly relevant and at the heart of statistical computing, to this day there are not more than four \proglang{R} packages published on the topic on the Comprehensive \proglang{R} Archive Network (CRAN), namely \pkg{FME} \citep{FME}, \pkg{nlmeODE} \citep{nlmeODE}, \pkg{mkin} \citep{mkin} and \pkg{scaRabee} \citep{scaRabee}. All packages have in common that they are built upon the \pkg{deSolve} package \citep{deSolve}.
 The packages \pkg{mkin} and \pkg{FME} support ODEs defined by compiled code where \pkg{mkin} provides tools to autogenerate the \proglang{C} code and compile it using the \pkg{inline} package. For model fitting and uncertainty analysis, \pkg{mkin} fully resorts to the functionality of \pkg{FME}.
-Concerning model fitting, \pkg{FME} and \pkg{nlmeODE} (with \pkg{nlme} in the background) use deterministic derivative-based optimizers by default, i.e.~either Levenberg-Marquardt or Newton methods provided by \code{nls.lm()}, \code{optim()} or \code{nlmimb()}. Although all these optimizers support gradient or Hessian information as input, only the \pkg{nlmeODE} package provides an option to augment the ODE by its sensitivity equations to generate derivates for the residuals. By default, sensitivities are computed by finite differences. Last but not least, the \pkg{scaRabee} package uses the Nelder-Mead optimization algorithm which is derivative-free but needs many iterations until convergence.
-In all packages, uncertainty analysis is by default based on the variance-covariance matrix, i.e.~on the inverse Hessian matrix of the least squares function. For non-linear models, this method provides a good approximation only if parameters are identifiable and the data is highly informative. If these conditions are not met, more sofisticated methods like e.g.~Markov chain Monte Carlo (MCMC) sampling, implemented in \pkg{FME}, are required.
+Concerning model fitting, \pkg{FME} and \pkg{nlmeODE} (with \pkg{nlme} in the background) use deterministic derivative-based optimizers by default, i.e.~either Levenberg-Marquardt or Newton methods provided by \code{nls.lm()}, \code{optim()} or \code{nlmimb()}. Although all these optimizers support gradient or Hessian information as input, only the \pkg{nlmeODE} package provides an option to augment the ODE by its sensitivity equations to generate derivates for the residuals. By default, sensitivities are computed by finite differences. Last but not least, the \pkg{scaRabee} package uses the Nelder-Mead optimization algorithm which is derivative-free but needs in general more iterations until convergence.
+In all packages, uncertainty analysis is by default based on the variance-covariance matrix, i.e.~on the inverse Hessian matrix of the least squares function. For non-linear models, this method provides a good approximation only if parameters are identifiable and the data is highly informative. If these conditions are not met, more sophisticated methods like e.g.~Markov chain Monte Carlo (MCMC) sampling, implemented in \pkg{FME}, are required.
 The strength of \pkg{scaRabee} and especially \pkg{nlmeODE} is multi-conditional fitting. This means that the same model with the same parameters but different forcings to reflect experimental conditions is fitted simultaneously to the condition-specific data sets. In the context of mixed-effects modeling as provided by \pkg{nlmeODE}, parameters can be grouped in fixed effects (same parameters over all conditions) and random effects (parameters are different between conditions).  
 
 In this paper we present \pkg{dMod}, an \proglang{R} package on dynamic modeling and parameter estimation. The aim and core functionality of \pkg{dMod} is
@@ -88,18 +91,19 @@ In this paper we present \pkg{dMod}, an \proglang{R} package on dynamic modeling
 	\item facilitated set-up of dynamic models with automated \proglang{C} code generation for fast simulation of model predictions and model sensitivities,
 	\item flexible set-up of general parameter transformations (explicit or implicit) and observation functions, allowing for the implementation of multiple experimental conditions similar to mixed-effects modeling,
 	\item parameter estimation based on trust-region optimization of the negative log-likelihood, making use of the sensitivity equations of the dynamic system and of symbolic derivatives of the observation- and parameter transformation functions,
-	\item identifiabiliy and uncertainty analysis based on the profile-likelihood method to determine confidence intervals for parameters and predictions.
+	\item identifiability and uncertainty analysis based on the profile-likelihood method to determine confidence intervals for parameters and predictions.
 \end{enumerate}
 
 The core functionality is extended by two symbolic methods implemented in \proglang{Python} and interfaced via the \pkg{rPython} package: identifiability and observability analysis based on Lie-group symmetries \citep{merkt2015higher} and steady-state constraints for parameter estimation \citep{rosenblatt2016customized}.
 
-The strict implementation of capabilities to generate and propagate derivatives on a compiled-code level distinguishes \pkg{dMod} from other modeling frameworks as discussed above. Most of the standard optimization routines implemented in \proglang{R} need derivative information. However, the computation of derivatives in the context of ODE models holds some pit-falls. The accuracy of sensitivities obtained from finite differences can be insufficient because the step control of the integrator presents an additional source of numeric inaccuracy. Even for numeric methods circumventing this problem, e.g.~complex-step derivatives \citep{squire1998using}, the use of sensitivity equations is still beneficial judging from the accuracy vs.~computational cost ratio. See \citep{raue2013lessons} for a comparison of methods.
+The strict implementation of capabilities to generate and propagate derivatives on a compiled-code level distinguishes \pkg{dMod} from other modeling frameworks as discussed above. Most of the standard optimization routines implemented in \proglang{R} need derivative information. However, the computation of derivatives in the context of ODE models holds some pitfalls. The accuracy of sensitivities obtained from finite differences can be insufficient because the step control of the integrator presents an additional source of numeric inaccuracy. Even for numeric methods circumventing this problem, e.g.~complex-step derivatives \citep{squire1998using}, the use of sensitivity equations is still beneficial judging from the accuracy vs.~computational cost ratio. See \citep{raue2013lessons} for a comparison of methods.
 
-Parameter estimation in dynamic models if frequently confronted with the issue of non-identifiable parameters. In some cases, non-identifiability has structural reasons. The differential equations bear certain symmetries and these can or cannot be broken by observation functions. A functional relationship between parameters that leaves the observation invariant is the consequence of the latter. In other cases, the data allows to determine a unique optimum but other solutions, although worse, cannot be statistically rejected. The \pkg{dMod} package deals with parameter identifiability and parameter uncertainty by the profile-likelihood method \citep{murphy2000profile, kreutz2013profile}. The method has proven especially useful in the case of non-identifiable parameters where results obtained from both, the quadratic approximation by the variance-covariance matrix and MCMC sampling can be misleading \citep{raue2013joining}. Besides parameter uncertainties, the profile likelihood method allows to estimate prediction uncertainty, it supports the planning of new informative experiments or suggest possible model reductions.
+Another distinguishing feature of \pkg{dMod} is the handling of non-identifiability of parameters, a phenomenon occurring frequently in the context of parameter estimation in dynamic systems.
+ In some cases, non-identifiability has structural reasons. The differential equations bear certain symmetries and these can or cannot be broken by observation functions. A functional relationship between parameters that leaves the observation invariant is the consequence of the latter. In other cases, the data allows to determine a unique optimum but other solutions, although worse, cannot be statistically rejected. The \pkg{dMod} package deals with parameter identifiability and parameter uncertainty by the profile-likelihood method \citep{murphy2000profile, kreutz2013profile}. The method has proven especially useful in the case of non-identifiable parameters where results obtained from both, the quadratic approximation by the variance-covariance matrix and MCMC sampling can be misleading \citep{raue2013joining}. Besides parameter uncertainties, the profile likelihood method allows to estimate prediction uncertainty, it supports the planning of new informative experiments or suggest possible model reductions.
 
-The key methods implemented in \pkg{dMod} are illustrated in great detail on a dynamic model of bile acid flow. The example is a show-case of how modeling \textit{is} a dynamic process, using the analysis tools implemented in \pkg{dMod} to predict, plan new experiments, combine data frome different experiments and include non-linear parameter constraints to improve parameter identifiability. Thereby, we show that \pkg{dMod} is a full-grown, flexible modeling environment, fast, thanks to compiled code, reliable, thanks to symbolic derivatives, and accurate, thanks to advanced statistical methods. 
+The key methods implemented in \pkg{dMod} are illustrated in great detail on a dynamic model of bile acid flow. The example is a show-case of how modeling \textit{is} a dynamic process, using the analysis tools implemented in \pkg{dMod} to predict, plan new experiments, combine data from different experiments and include non-linear parameter constraints to improve parameter identifiability. Thereby, we show that \pkg{dMod} is a full-grown, flexible modeling environment, fast, thanks to compiled code, reliable, thanks to symbolic derivatives, and accurate, thanks to advanced statistical methods. 
 
-The paper is organized as follows: Section~\ref{sec:theory} introduces the mathematical set-up of dynamic modeling, symmetries in dynamic systems, parameter estimation by the maximum-likelihood method and the profile likelihood. Section~\ref{sec:implementation} discusses the implementaton and design principles behind the \pkg{dMod} software. The functionality of \pkg{dMod} is presented in Section~\ref{sec:example} on the example of bile acid flow in a three-compartment model and finally, Section~\ref{sec:extensions} discusses the two \proglang{Python} extensions coming with \pkg{dMod}.
+The paper is organized as follows: Section~\ref{sec:theory} introduces the mathematical set-up of dynamic modeling, symmetries in dynamic systems, parameter estimation by the maximum-likelihood method and the profile likelihood. Section~\ref{sec:implementation} discusses the implementation and design principles behind the \pkg{dMod} software. The functionality of \pkg{dMod} is presented in Section~\ref{sec:example} on the example of bile acid flow in a three-compartment model and finally, Section~\ref{sec:extensions} discusses the two \proglang{Python} extensions coming with \pkg{dMod}.
 
 
 % Rechenzeit erwähnen
@@ -112,6 +116,30 @@ The paper is organized as follows: Section~\ref{sec:theory} introduces the mathe
 \subsection{Ordinary differential equation models}
 
 \subsection{Maximum-likelihood method and non-linear optimization}
+
+\paragraph{Parameter estimation} is a common task in statistics. It describes the process of inferring parameter values or parameter ranges of a statistical model based on observed data. Over decades, appropriate estimators have been developed for different problem classes. The principle of maximum likelihood allows to derive an estimator which is especially suited for applications where the distribution of the observation noise is known. This knowledge about the structure of the noise constitutes an additional information that makes the maximum-likelihood estimator (MLE) \textit{efficient}, i.e.~from all unbiased estimators the MLE has the lowest variance. Other properties of maximum-likelihood estimation are \textit{consistency}, i.e.~the true parameter is reached in the limit of infinite data-sample size, and \textit{asymptotic normality}, i.e.~in the limit of infinite data the MLE follows a multivariate normal distribution. See \citep{azzalini1996statistical} for an introduction to likelihood theory.
+
+Maximum-likelihood estimation is based on the maximization of the likelihood function $L(\theta) = \phi(y^D|\theta)$. Here, $\phi$ is the joint probability density for a vector of observations $y$ evaluated at the point $y = y^D$, the vector of data points. The distribution $\phi$ depends parametrically on model parameters $\theta$. The maximum-likelihood estimator $\hat\theta$ is defined as
+\begin{align*}
+	\hat \theta := \argmax_{\theta} L(\theta),
+\end{align*}
+meaning that $\hat\theta$ is an extremum estimator. Depending on the model class and the probability distribution $\phi$, maximization of the likelihood can be a challenge beyond the scope of analytical methods. Numerical optimization methods help to solve the maximization problem in practical applications.
+
+The easiest and one of the most frequent situations is when $\phi\sim\mathcal N(\mu(\theta), \Sigma)$ follows a normal distribution. When measurements are statistically independent, the variance-covariance matrix $\Sigma$ is diagonal and $\phi$ factorizes. The Likelihood function becomes
+\begin{align}
+	L(\theta) &= \prod_i \frac{1}{\sqrt{2\pi\sigma_i^2}} e^{-\frac{\mu_i(\theta)^2}{2\sigma_i^2}} 
+	\label{eq:likelihood}
+\end{align}
+The connection between the statistical model and the observed data is given by $\mu_i(\theta) = y_i(\theta) - y_i^D$. Taking twice the negative logarithm of eq.~\eqref{eq:likelihood} yields
+\begin{align}
+	l(\theta) = -2\log L(\theta) &= \sum_i \left[\left(\frac{y_i(\theta) - y_i^D}{\sigma_i}\right)^2 + \log(2\pi\sigma_i^2)\right].
+	\label{eq:nll}
+\end{align}
+Assuming that the data uncertainties $\sigma_i$ are known, eq.~\eqref{eq:nll} is the weighted least-squares function shifted by a constant. For unknown $\sigma_i$, eq.~\eqref{eq:nll} can be optimized with respect to $\theta$ and $\sigma$ jointly, yielding the MLE $(\hat\theta, \hat\sigma)$.
+
+\paragraph{Numerical optimization} is a diverse field with as many algorithms as there are optimization problems around.  
+
+
 
 % Hier auf Maximum-Likelihood vs. least-squares function eingehen.
 
@@ -126,7 +154,7 @@ The paper is organized as follows: Section~\ref{sec:theory} introduces the mathe
 
 A system of ordinary differential equation $\dot x = f(x, p, u, t)$ can be represented by a \code{character} vector of equations involving symbols for the states $x$ (coinciding with names of the vector), symbols for the parameters $p$, symbols for the forcings $u$ and the keyword \code{time} for $t$. The class provided by \pkg{dMod} for such objects is the \code{eqnvec} class which checks whether the character can be parsed and thus, can be interpreted as an equation.
 
-There are several ways to define the differential equations. An \code{eqnvec} of equations can be explicitly formulated, analogously to a \code{c()} command. Especially for chemical reactions it can be tideous to keep track of all gain and loss terms. Therefore, \pkg{dMod} provides the \code{eqnlist} class which encodes the ODE by a list of (1) state names, (2) rate expressions, (3) compartment volumes and (4) the stoichiometric matrix. Each reaction flux occurs only once and the gain and loss is represented by the coefficients in the stoichiometric matrix. \pkg{dMod} supports the read-in of a csv file with the stoichiometric matrix and rate expressions and provides a function \code{addReaction()} to construct an \code{eqnlist} object step-by-step or add further reactions to an already existing \code{eqnlist}. The conversion to the (differential) equations is done by \code{as.eqnvec()} which does all the bookkeeping of gain and loss terms and volume ratios due to compartment transitions.
+There are several ways to define the differential equations. An \code{eqnvec} of equations can be explicitly formulated, analogously to a \code{c()} command. Especially for chemical reactions it can be tedious to keep track of all gain and loss terms. Therefore, \pkg{dMod} provides the \code{eqnlist} class which encodes the ODE by a list of (1) state names, (2) rate expressions, (3) compartment volumes and (4) the stoichiometric matrix. Each reaction flux occurs only once and the gain and loss is represented by the coefficients in the stoichiometric matrix. \pkg{dMod} supports the read-in of a csv file with the stoichiometric matrix and rate expressions and provides a function \code{addReaction()} to construct an \code{eqnlist} object step-by-step or add further reactions to an already existing \code{eqnlist}. The conversion to the (differential) equations is done by \code{as.eqnvec()} which does all the bookkeeping of gain and loss terms and volume ratios due to compartment transitions.
 
 The paradigm of \pkg{dMod} is to make use of derivatives wherever possible. It is one of the core functionalities of the \pkg{cOde} package upon which \pkg{dMod} is based to augment a system of ODEs by its sensitivity equations. If many parameters are involved and the system consists of many states, the number of equations quickly grows and solving the equations can be considerably accelerated if compiled code is used. \pkg{dMod} provides the \code{odemodel} class. An object of class \code{odemodel} is generated from an \code{eqnlist} or \code{eqnvec}. In the background \proglang{C} code for the ODE and the combined system of ODE and sensitivity equations is generated, written into the working directory and compiled. The \code{odemodel} object keeps track of the shared objects and is the basis of a prediction function $x(t, p)$ which is generated by the \code{Xs()} command.
 
@@ -156,7 +184,7 @@ Let \code{g}, \code{x}, \code{p1} and \code{p2} be an observation-, a prediction
 
 A set of parameter values, forcings and events reflects a certain condition in which we find a dynamic system. By manipulation of the system, single parameters, forcings or events can be changed. It is a typical approach to systems inference to systematically perturb small parts of a dynamic system to reveal information about the underlying process. 
 
-The aim of \pkg{dMod} is to allow for "simultaneous" prediction under several conditions and compare these predictions to the corresponding experimental data sets to estimate model parameters. The full information contained in several perturbation experiments is only used if the multi-conditional model prediction is set up in a way that all model parameters not being chaged from condition to condition correspond to exactly one parameter. On the other hand, parameters which are systematically perturbed correspond to different parameters.
+The aim of \pkg{dMod} is to allow for "simultaneous" prediction under several conditions and compare these predictions to the corresponding experimental data sets to estimate model parameters. The full information contained in several perturbation experiments is only used if the multi-conditional model prediction is set up in a way that all model parameters not being changed from condition to condition correspond to exactly one parameter. On the other hand, parameters which are systematically perturbed correspond to different parameters.
 
 Mathematically speaking, we want to construct a parameter transformation
 \begin{equation}
@@ -411,11 +439,11 @@ Here, we have searched according to $\vec p_i = \vec p_0 + \Delta\vec p_i$ where
 	\caption{Result of multi-start fitting procedure. (A) Fits have been sorted by increasing least squares value. Four optima were found with almost identical objective value. (B) The parameter values for different optima are shown in different colors }
 	\label{fig:mstrust}
 \end{figure}
-Despite the similar objective value, the optima are not close to each other in parameter space, as being illustrated by Figure~\ref{fig:mstrust}B. From the initial value parameters \code{TCA_cell} and \code{TCA_cana} it seems that they are exchangable. Where \code{TCA_cell} is high, \code{TCA_cana} is low and vice versa. This is not surprising because the observed cellular TCA amount is the sum of both. A new experiment needs to be designed to distinguish one situation from another.
+Despite the similar objective value, the optima are not close to each other in parameter space, as being illustrated by Figure~\ref{fig:mstrust}B. From the initial value parameters \code{TCA_cell} and \code{TCA_cana} it seems that they are exchangeable. Where \code{TCA_cell} is high, \code{TCA_cana} is low and vice versa. This is not surprising because the observed cellular TCA amount is the sum of both. A new experiment needs to be designed to distinguish one situation from another.
 
 \subsection{Working with several conditions}\label{sec:conditions}
 
-In practice, the canaliculi only form a closed compartment if Ca$^{2+}$/Mg$^{2+}$ ions are present in the buffer. Therefore, if the experiment is repeated with Ca$^{2+}$/Mg$^{2+}$-free efflux buffer, the contents of the canaliculi escapes quickly into the buffer compartment and the observables \code{buffer} and \code{cellular} effectivly reflect \code{TCA_buffer + TCA_cana} and \code{TCA_cell}. Mathematically, two experimental conditions which differ only by the \code{reflux} parameter need to be combined in one objective function.
+In practice, the canaliculi only form a closed compartment if Ca$^{2+}$/Mg$^{2+}$ ions are present in the buffer. Therefore, if the experiment is repeated with Ca$^{2+}$/Mg$^{2+}$-free efflux buffer, the contents of the canaliculi escapes quickly into the buffer compartment and the observables \code{buffer} and \code{cellular} effectively reflect \code{TCA_buffer + TCA_cana} and \code{TCA_cell}. Mathematically, two experimental conditions which differ only by the \code{reflux} parameter need to be combined in one objective function.
 
 Like before, we generate a simulated data set. Then, a parameter transformation for the additional condition is set up and the parameter space is explored by a multi-start fit.
 
@@ -444,9 +472,9 @@ p <- p + P(trafo, condition = "open")
 \end{CodeInput}
 \end{CodeChunk}
 
-Compared to the situation before we have gained the outer parameter \code{reflux_open}. Both transformations, "standard" and "open", evaluate the same vector of outer parameters meaning that they yield the same values for all but \code{reflux} and \code{reflux_open}. The prediction function \code{g*x} is generic in the sense that \code{condition = NULL} wheras the concatenation \code{g*x*p} has the conditions "standard" and "open", evaluating the identical function \code{g*x} on two parameter vectors.
+Compared to the situation before we have gained the outer parameter \code{reflux_open}. Both transformations, "standard" and "open", evaluate the same vector of outer parameters meaning that they yield the same values for all but \code{reflux} and \code{reflux_open}. The prediction function \code{g*x} is generic in the sense that \code{condition = NULL} whereas the concatenation \code{g*x*p} has the conditions "standard" and "open", evaluating the identical function \code{g*x} on two parameter vectors.
 
-We define un updated objective function:
+We define an updated objective function:
 \begin{CodeChunk}
 \begin{CodeInput}
 outerpars <- getParameters(p)
@@ -529,7 +557,7 @@ for (n in conditions) {
   equations <- trafos[[n]]$equations
   equations["TCA_cana"] <- "exp(export_cana)*exp(TCA_cell)/exp(reflux)"
   pSS <- pSS + P(equations, condition = n)
-
+  
 }
 \end{CodeInput}
 \end{CodeChunk}
@@ -639,7 +667,7 @@ obj <- normL2(data, g*x*pSS*p) + constraintL2(pouter, sigma = 10)
 \end{CodeInput}
 \end{CodeChunk}
 
-The same simulated data set has been fitted by the fully explit and the implicit/explicit model implementations. In both cases the global optimum is unique. Parameter profiles have been computed with both model implementations, shown in Figure~\ref{fig:allprofiles}.
+The same simulated data set has been fitted by the fully explicit and the implicit/explicit model implementations. In both cases the global optimum is unique. Parameter profiles have been computed with both model implementations, shown in Figure~\ref{fig:allprofiles}.
 \begin{figure}[ht]
 	\centering
 	\includegraphics[width = \textwidth]{images/figure8}
