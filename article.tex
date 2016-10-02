@@ -177,7 +177,7 @@ The easiest and one of the most frequent situations is when $\phi$ follows a nor
 	L(\theta) &= \prod_i \frac{1}{\sqrt{2\pi\sigma_i^2}} e^{-\frac{\mu_i(\theta)^2}{2\sigma_i^2}} 
 	\label{eq:likelihood}
 \end{align}
-The connection between the statistical model and the observed data is given by $\mu_i(\theta) = y_i(\theta) - y_i^D$. Taking twice the negative logarithm of eq.~\eqref{eq:likelihood} yields
+The connection between the statistical model and the observed data is given by $\mu_i(\theta) = y_i(\theta) - y_i^D$. Taking twice the negative logarithm, eq.~\eqref{eq:likelihood} turns into
 \begin{align}
 	l(\theta) = -2\log L(\theta) &= \sum_i \left[\left(\frac{y_i(\theta) - y_i^D}{\sigma_i}\right)^2 + \log(2\pi\sigma_i^2)\right],
 	\label{eq:nll}
@@ -187,13 +187,62 @@ Assuming that the data uncertainties $\sigma_i$ are known, eq.~\eqref{eq:nll} is
 
 \subsection{Non-linear optimization}
 
-Numerical optimization is a diverse field with as many algorithms as there are optimization problems around.  
+Numerical optimization is a diverse field with as many algorithms as there are optimization problems around. For our application, derivative-based methods and in particular the Newton method plays a major role.
+
+Optimization by the Newton method attempts to iteratively find the root of the gradient $\nabla l (\theta)$ by the recursion
+\begin{align}
+	\theta^{(n+1)} = \theta^{(n)} - Hl(\theta)^{-1}\nabla l(\theta),
+	\label{eq:newton}
+\end{align}
+where $Hl(\theta)$ denotes the Hessian, i.e.~the matrix of second derivatives of $l(\theta)$. The fact that for normally distributed noise the log-likelihood is a least squares function, has a big advantage: gradient and (approximate) Hessian can be computed from first-order derivatives,
+\begin{align}
+	\nabla l(\theta) = 2 r(\theta) J(\theta) \quad\quad Hl(\theta) \approx 2 J(\theta)^T J(\theta),
+	\label{eq:derivatives}
+\end{align}
+with the weighted residual vector $r_i(\theta) = \frac{y_i(\theta) - y_i^D}{\sigma_i}$ and its first derivative, the Jacobian matrix 
+\begin{align}
+	J_{ij}(\theta) = \frac{\partial r_i}{\partial \theta_j}(\theta) = \frac{1}{\sigma_i} \frac{\partial y_i}{\partial \theta_j}(\theta). \label{eq:jacobian}
+\end{align}
+As indicated by eqs.~\eqref{eq:derivatives}-\eqref{eq:jacobian},  first model sensitivities $\frac{\partial y_i}{\partial\theta_j}$ are sufficient to compute gradient and Hessian in good approximation.
+
+The Newton recursion, eq.~\eqref{eq:newton}, converges in one iteration if $l(\theta)$ is a quadratic form. However, $l(\theta)$ is only quadratic if the model $y(\theta)$ is linear in $\theta$ which is usually not the case for ODE models. On the other hand, each smooth function, no matter if quadratic or not, can be approximated by a quadratic function based on its Taylor series. Depending on the function's shape, the \textit{trust region}, i.e.~the region where $l(\theta)$ is well approximated, can become quite small. Accordingly, a Newton step pointing far beyond this region could be misleading and not helpful for optimization. This is the idea behind trust-region optimization \citep{wright1999numerical}. In each iteration, the trust-region radius is adjusted and the optimization problem restricted to the trust region is solved. For parameter estimation in ODE models this has the additional advantage that parameter changes are constricted and optimization steps into parameter regions where the ODE cannot be numerically solved any more  become less frequent. This make trust-region optimization the method of choice for ODEs.
 
 
 
 % Hier auf Maximum-Likelihood vs. least-squares function eingehen.
 
 \subsection{Uncertainty analysis}
+
+Parameter estimates $\hat \theta$  are obtained by non-linear optimization of the log-likelihood function $l(\theta)$. Although being a function of the parameters,  the log-likelihood depends on the data, too. Consequently, "equivalent" random ralizations of the data would lead to different parameter estimates $\hat\theta$. Given $\hat\theta$ for one random realization of the data, the question is, if we can reject other parameters $\theta$ with a certain confidence level. This leads to the related question of parameter convidence intervals.
+
+A useful tool to derive confidence intervals is the profile likelihood. Consider a parameter of interest, $\theta_i$, being one of the parameters in the vector $\theta$. Furthermore, let $g_x(\theta) = \theta_i - x = 0$ be a parameter constraint. Then the function 
+\begin{align}
+	\begin{aligned}
+		{\rm pl}_i:\quad \mathbb R & \longrightarrow \mathbb R\\
+		x & \longmapsto \min_{(\theta, \lambda)} \big[ l(\theta) + \lambda g_x(\theta) \big]
+	\end{aligned}
+	\label{eq:pl}
+\end{align}
+is called the profile likelihood of the $i^{\;\rm th}$ paramameter and the path $x \mapsto (\hat\theta_x, \hat\lambda_x)$ along the minimizing parameters is called the profile likelihood path. Hence, the profile likelihood ${\rm pl}_i$  returns the minimal log-likelihood under the constraint $\theta_i \stackrel{!}{=} x$. By construction, the inequality $D := {\rm pl}_i(x) - {\rm pl}_i(\hat \theta_i) \geq 0$ holds for all $x$, assuming equality for $x = \hat\theta_i$. Interpreting the model with free $\theta$ as the null model and that with $\theta_i$ fixed to $x$ as the alternative model, the value $D$ is twice the log of the likelihood-ratio between those. Hence, a likelihood-ratio test can be performed to accept or reject the alternative model at a given confidence level. To compute the corresponding threshold, we assume Wilks' theorem according to which the thresholds are the quantiles of the $\chi^2$ distribution with one degree of freedom. Consequently, the $1\sigma, 2\sigma, \dots, n\sigma$-confidence intervals of $\theta_i$ are those values of $x$ for which ${\rm pl}_i(x) \leq 1, 2, \dots, n$, respectively. 
+
+The reason to formulate the profile likelihood by Lagrangian multipliers is that we can directly use eq.~\eqref{eq:pl} to derive the profile likelihood path $(\hat \theta_x, \hat\lambda_x)$ with respect to $x$:
+\begin{align}
+	\frac{\rm d}{{\rm d} x}
+	\begin{pmatrix}
+		\hat\theta_x \\ \hat\lambda_x
+	\end{pmatrix} =
+	\begin{pmatrix}
+		Hl(\hat\theta_x) & \nabla g_x(\hat \theta_x)\\
+		\nabla g_x(\hat\theta_x)^T & 0
+	\end{pmatrix}^{-1}
+	\begin{pmatrix}
+		0 \\ 1
+	\end{pmatrix}.
+	\label{eq:path}
+\end{align}
+Eq.~\eqref{eq:path} forms the basis of what is implemented in \pkg{dMod} for computing the profile likelihood.
+
+
 
 
 
