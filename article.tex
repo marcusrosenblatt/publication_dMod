@@ -113,7 +113,7 @@ The paper is organized as follows: Section~\ref{sec:theory} introduces the mathe
 \section{Theoretical background}
 \label{sec:theory}
 
-\subsection{Ordinary differential equation models}
+\subsection{Dynamic models and model sensitivities}
 Dynamic models describe systems with states $x$, usually quantifying the involved species, interacting and evolving over time. %  as e.g. given by chemical reaction networks. 
 The time evolution of the states is expressed via a set of ODEs, $\dot x = f(x)$. Although constituting quite a special class of dynamic systems, chemical reaction networks formulated by the law of mass action allow for surprisingly general applications. Typical ODE examples derived from the law of mass action are:
 \begin{itemize}
@@ -137,11 +137,26 @@ with the stoichiometry matrix $S$
 %containing the stoichiometric constants $\nu_{i,j}$ 
 obtained from the collection of vectors $\nu' - \nu$ for reactions $1, \dots, r$,
 and the flux vector $v(x,k)\in\mathbb R^{r}$.
-Eq.~\eqref{eq:Sv} also holds for general ODEs that do not follow from mass action kinetics. Moreover the system may be explicitly time-dependent and may contain forcings $u(t)$ which e.g.~describe the external stimulation of the system, $\dot x = S \cdot v(x,k,u,t)$. %Last but not least, the solution of eq.~\eqref{eq:Sv} depends on initial values $x_0 = x(t = 0)$. 
+Eq.~\eqref{eq:Sv} also holds for general ODEs that do not follow from mass action kinetics. Moreover the system may be explicitly time-dependent and may contain forcings $u(t)$ which e.g.~describe the external stimulation of the system. A general form of the dynamic model is therefore given by
+\begin{align} 
+	\dot x = f(x,k,u,t) = S \cdot v(x,k,u,t), \quad\quad \textrm{with }  x(t = 0) = x_0.
+\end{align}
+The solution $x(t,\theta)$ for a given parameter vector $\theta = (k, x_0)$ is called model prediction. %The parameters $\theta$ contain the rate constants, initial values $x_0$ and additional parameters included in the forcings. 
+It is generally assumed that the stoichiometry matrix $S$ of the system is known.
+Besides the model predition itself, also the sensitivity of the prediction to changes in the parameter values is of interest. 
+The sensitivities $s_i = \frac{\partial x}{\partial \theta_i}$ satisfy the \textit{sensitivity equations}
+\begin{align}
+	\dot s_i  = \frac{\partial f}{\partial x} s_i + \frac{\partial f}{\partial \theta_i}, \qquad \textrm{with }s_i(t = 0) = \frac{\partial x_0}{\partial \theta_i},
+\end{align}
+a system of ordinary differential equations that in general depend on the states $x$ and, therefore, need to be solved jointly with the original ODE. 
 
-Often the experimentally observed quantities $y$ do not directly correspond to the species $x$ described by the model, but are obtained via an observation function $g: \mathbb{R}^n \rightarrow \mathbb{R}^m$,  $y = g(x)$. Typical examples are unknown scalings and offsets in the measurement $y = c_s \cdot x + c_o$ or the joint measurement of several species $y_i = \sum_j c_j x_j$.   \\
-The model prediction is therefore obtained by evaluating the observation function on the integrated ODEs, given a set of free parameters $\theta$ of the system. The parameters $\theta$ contain the rate constants, initial values $x_0 = x(t=0)$ and additional parameters included in the prediction function and forcings. It is generally assumed that the stoichiometry of the system is known. \\
-Besides the model predition itself, also the sensitivity of the prediction to changes in the parameter values, $\frac{\partial y}{\partial \theta}$, is of interest. Sensitivity equations can be directly inferred  
+Often the experimentally observed quantities $y$ do not directly correspond to the species $x$ described by the ODE, but are obtained via an observation function $g: \mathbb{R}^n \rightarrow \mathbb{R}^m$,  \begin{align}
+	y = g(x, c)
+\end{align}
+with the observation parameters $c$. Examples for observation functions are scaling and offset transformations, $y = c_s \cdot x + c_o$, or the measurement of a superposition of species, $y_i = \sum_j c_j x_j$. The model prediction for the observed states is obtained by evaluating the observation function on the solution of the ODE. Following the chain rule of differentation also the sensitivities of the observed states $\frac{\partial y}{\partial \theta_i} = \frac{\partial g}{\partial x} \frac{\partial x}{\partial\theta_i}  + \frac{\partial g}{\partial \theta_i}$ are obtained. Here, the parameter vector $\theta$ has been augmented by the observation parameters, $\theta = (k, x_0, c)$.
+
+The estimation of the parameters $\theta$ given the observation $y(t)$ is addressed in the next section.
+%Next, the question how to estimate the parameters $\theta$ given the observation $y(t)$ is addressed.
 
 % Eventuell of multi-condition prediction
 
@@ -149,7 +164,7 @@ Besides the model predition itself, also the sensitivity of the prediction to ch
 
 \subsection{Maximum-likelihood method}
 
-Parameter estimation is a common task in statistics. It describes the process of inferring parameter values or parameter ranges of a statistical model based on observed data. Over decades, appropriate estimators have been developed for different problem classes. The principle of maximum likelihood allows to derive an estimator which is especially suited for applications where the distribution of the observation noise is known. This knowledge about the structure of the noise constitutes additional information that makes the maximum-likelihood estimator (MLE) \textit{efficient}, i.e.~from all unbiased estimators the MLE has the lowest variance. Other properties of maximum-likelihood estimation are \textit{consistency}, i.e.~the true parameter is reached in the limit of infinite data-sample size, and \textit{asymptotic normality}, i.e.~in the limit of infinite data the MLE follows a multivariate normal distribution. See \citep{azzalini1996statistical} for an introduction to likelihood theory.
+Parameter estimation is a common task in statistics. It describes the process of inferring parameter values or parameter ranges of a statistical model based on observed data. Over decades, appropriate estimators have been developed for different problem classes. The principle of maximum likelihood allows to derive an estimator which is especially suited for applications where the distribution of the measurement noise is known. This knowledge about the structure of the noise constitutes additional information that makes the maximum-likelihood estimator (MLE) \textit{efficient}, i.e.~from all unbiased estimators the MLE has the lowest variance. Other properties of maximum-likelihood estimation are \textit{consistency}, i.e.~the true parameter is reached in the limit of infinite data-sample size, and \textit{asymptotic normality}, i.e.~in the limit of infinite data the MLE follows a multivariate normal distribution. See \citep{azzalini1996statistical} for an introduction to likelihood theory.
 
 Maximum-likelihood estimation is based on the maximization of the likelihood function $L(\theta) = \phi(y^D|\theta)$. Here, $\phi$ is the joint probability density for a vector of observations $y$ evaluated at the point $y = y^D$, the vector of data points. The distribution $\phi$ depends parametrically on model parameters $\theta$. The maximum-likelihood estimator $\hat\theta$ is defined as
 \begin{align*}
