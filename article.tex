@@ -3,6 +3,7 @@
 \usepackage[]{amsmath}
 \usepackage{amssymb}
 \usepackage{enumerate}
+\pdfinclusioncopyfonts=1
 
 \DeclareMathOperator*{\argmin}{arg\,min}
 \DeclareMathOperator*{\argmax}{arg\,max}
@@ -331,17 +332,31 @@ The following model is a simplified version of the dynamic model on bile acid tr
 
 To study bile clearance, experiments with hepatocytes or hepatocyte-like cell lines are performed \textit{in-vitro}. Cells in a Petri dish stick together to a monolayer of cells, forming bile canaliculi in between cells. They adhere to the plate and are surrounded by a buffer providing the cells with nutrients. To measure bile acids, here \textit{taurocholic acid} (TCA), radioactively labeled TCA is used.
 
-For the mathematical description of bile flow, a three-compartment differential equation model is used. TCA is pipetted into the buffer compartment (\code{TCA_buffer}) from where it is transported into the cells (\code{TCA_cell}). Intracellular TCA is exported back to the buffer or the canalicular compartment (\code{TCA_cana}). Finally, canalicular TCA flows back into the buffer compartment. These processes give rise to the following differential equations:
-\begin{equation}
-	\begin{aligned}
-		\frac{\rm d}{ {\rm d}t} \verb!TCA_buffer! &= \verb!-import * TCA_buffer + export_sinus * TCA_cell!\\
-		& \quad \verb! + reflux * TCA_cana!\\
-		\frac{\rm d}{ {\rm d}t} \verb!TCA_cana! &= \verb!export_cana * TCA_cell - reflux * TCA_cana!\\
-		\frac{\rm d}{ {\rm d}t} \verb!TCA_cell! &= \verb!import * TCA_buffer - export_sinus * TCA_cell!\\
-		&\quad \verb! - export_cana * TCA_cell!.
-	\end{aligned}
-	\label{eq:ode}
-\end{equation}
+For the mathematical description of bile flow, a three-compartment differential equation model is used. TCA is pipetted into the buffer compartment (\code{TCA_buffer}) from where it is transported into the cells (\code{TCA_cell}). Intracellular TCA is exported back to the buffer or the canalicular compartment (\code{TCA_cana}). Finally, canalicular TCA flows back into the buffer compartment. These processes give rise to the differential equations and corresponding flowchart in Figure~\ref{fig:flowchart}.
+\begin{figure}[ht]
+	\centering
+	\begin{minipage}{0.55\textwidth}
+		\textbf{A}
+		\begin{equation*}
+			\begin{aligned}
+				\frac{\rm d}{ {\rm d}t} \verb!TCA_buffer! &= \verb!-import * TCA_buffer!\\
+				& \quad \verb! + export_sinus * TCA_cell!\\
+				& \quad \verb! + reflux * TCA_cana!\\
+				\frac{\rm d}{ {\rm d}t} \verb!TCA_cana! &= \verb!export_cana * TCA_cell!\\
+				& \quad \verb! - reflux * TCA_cana!\\
+				\frac{\rm d}{ {\rm d}t} \verb!TCA_cell! &= \verb!import * TCA_buffer!\\
+				& \quad \verb! - export_sinus * TCA_cell!\\
+				&\quad \verb! - export_cana * TCA_cell!.
+			\end{aligned}
+		\end{equation*}
+	\end{minipage}
+	\begin{minipage}{0.44\textwidth}
+		\textbf{B}\\
+	\includegraphics[width = \textwidth]{images/flowchart}
+	\end{minipage}
+	\caption{Differential equations and flowchart of the reaction network. Taurocholic acid,  TCA, is transported between three compartments by four different processes. (A) Assuming mass-action kinetics, the three dynamic states satisfy a set of coupled differential equations. (B) The equations are visualized in a flowchart. }
+	\label{fig:flowchart}
+\end{figure}
 
 \subsection{Simulation and prediction}
 
@@ -640,7 +655,7 @@ Finally, the parameters \code{import}, \code{export_cana} and \code{reflux} exce
 
 So far we have estimated both initial concentrations, \code{TCA_cell} and \code{TCA_cana}, independently. However, we know that the efflux experiment was just started after completion of the uptake process. Our system runs into a steady state, the buffer is exchanged and the measurement begins. Hence, we can use the steady-state condition as an additional information for the modeling process.
 
-The steady-state relation between \code{TCA_cana} and \code{TCA_cell} can be derived analytically from eq.~\eqref{eq:ode}. It reads
+The steady-state relation between \code{TCA_cana} and \code{TCA_cell} can be derived analytically from the ODE, Figure~\ref{fig:flowchart}A. It reads
 \begin{equation}
 	\verb!TCA_cana! = \verb!export_cana * TCA_cell / reflux!
 	\label{}
