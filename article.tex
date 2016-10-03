@@ -187,7 +187,7 @@ Assuming that the data uncertainties $\sigma_i$ are known, eq.~\eqref{eq:nll} is
 
 \subsection{Non-linear optimization}
 
-Numerical optimization is a diverse field with as many algorithms as there are optimization problems around. For our application, derivative-based methods and in particular the Newton method plays a major role.
+Numerical optimization is a diverse field with as many algorithms as there are optimization problems around. For our application, derivative-based methods, and in particular the Newton method, play a major role.
 
 Optimization by the Newton method attempts to iteratively find the root of the gradient $\nabla l (\theta)$ by the recursion
 \begin{align}
@@ -213,27 +213,28 @@ The Newton recursion, eq.~\eqref{eq:newton}, converges in one iteration if $l(\t
 
 \subsection{Uncertainty analysis}
 
-Parameter estimates $\hat \theta$  are obtained by non-linear optimization of the log-likelihood function $l(\theta)$. Although being a function of the parameters,  the log-likelihood depends on the data, too. Consequently, "equivalent" random ralizations of the data would lead to different parameter estimates $\hat\theta$. Given $\hat\theta$ for one random realization of the data, the question is, if we can reject other parameters $\theta$ with a certain confidence level. This leads to the related question of parameter convidence intervals.
+Parameter estimates $\hat \theta$  are obtained by non-linear optimization of the log-likelihood function $l(\theta)$. Although being a function of the parameters,  the log-likelihood depends on the data, too. Consequently, "equivalent" random realizations of the data would lead to different parameter estimates $\hat\theta$. Given $\hat\theta$ for one random realization of the data, the question is, if we can reject other parameters $\theta$ with a certain confidence level. This leads to the related question of parameter convidence intervals.
 
-A useful tool to derive confidence intervals is the profile likelihood. Consider a parameter of interest, $\theta_i$, being one of the parameters in the vector $\theta$. Furthermore, let $g_x(\theta) = \theta_i - x = 0$ be a parameter constraint. Then the function 
+A useful tool to derive confidence intervals is the profile likelihood. Consider a parameter of interest, $\theta_i$, being one of the parameters in the vector $\theta$. Furthermore, let $c_{\tau}(\theta) = \theta_i - \tau = 0$ be a parameter constraint. 
+Then, extending the likelihood with the constraint via a Lagrange multiplier $\lambda$ yields
 \begin{align}
 	\begin{aligned}
 		{\rm pl}_i:\quad \mathbb R & \longrightarrow \mathbb R\\
-		x & \longmapsto \min_{(\theta, \lambda)} \big[ l(\theta) + \lambda g_x(\theta) \big]
+		\tau & \longmapsto \min_{(\theta, \lambda)} \big[ l(\theta) + \lambda c_{\tau}(\theta) \big]
 	\end{aligned}
 	\label{eq:pl}
 \end{align}
-is called the profile likelihood of the $i^{\;\rm th}$ paramameter and the path $x \mapsto (\hat\theta_x, \hat\lambda_x)$ along the minimizing parameters is called the profile likelihood path. Hence, the profile likelihood ${\rm pl}_i$  returns the minimal log-likelihood under the constraint $\theta_i \stackrel{!}{=} x$. By construction, the inequality $D := {\rm pl}_i(x) - {\rm pl}_i(\hat \theta_i) \geq 0$ holds for all $x$, assuming equality for $x = \hat\theta_i$. Interpreting the model with free $\theta$ as the null model and that with $\theta_i$ fixed to $x$ as the alternative model, the value $D$ is twice the log of the likelihood-ratio between those. Hence, a likelihood-ratio test can be performed to accept or reject the alternative model at a given confidence level. To compute the corresponding threshold, we assume Wilks' theorem according to which the thresholds are the quantiles of the $\chi^2$ distribution with one degree of freedom. Consequently, the $1\sigma, 2\sigma, \dots, n\sigma$-confidence intervals of $\theta_i$ are those values of $x$ for which ${\rm pl}_i(x) \leq 1, 2, \dots, n$, respectively. 
+which called the profile likelihood of the $i^{\;\rm th}$ parameter and the path $\tau \mapsto (\hat\theta_{\tau}, \hat\lambda_{\tau})$ along the minimizing parameters is called the profile likelihood path. Hence, the profile likelihood ${\rm pl}_i$ returns the minimal log-likelihood under the constraint $\theta_i \stackrel{!}{=} \tau$. By construction, the inequality $D := {\rm pl}_i(\tau) - {\rm pl}_i(\hat \theta_i) \geq 0$ holds for all $\tau$, assuming equality for $\tau = \hat\theta_i$. Interpreting the model with free $\theta$ as the null model and that with $\theta_i$ fixed to $\tau$ as the alternative model, the value $D$ is twice the log of the likelihood-ratio between those. Hence, a likelihood-ratio test can be performed to accept or reject the alternative model at a given confidence level. To compute the corresponding threshold, we assume Wilks' theorem according to which the thresholds are the quantiles of the $\chi^2$ distribution with one degree of freedom. Consequently, the $1\sigma, 2\sigma, \dots, n\sigma$-confidence intervals of $\theta_i$ are those values of $\tau$ for which ${\rm pl}_i(\tau) \leq 1, 2, \dots, n$, respectively. 
 
-The reason to formulate the profile likelihood by Lagrangian multipliers is that we can directly use eq.~\eqref{eq:pl} to derive the profile likelihood path $(\hat \theta_x, \hat\lambda_x)$ with respect to $x$:
-\begin{align}
-	\frac{\rm d}{{\rm d} x}
+The reason to formulate the profile likelihood by Lagrangian multipliers is that we can directly use eq.~\eqref{eq:pl} to derive the profile likelihood path $(\hat \theta_{\tau}, \hat\lambda_{\tau})$ with respect to $\tau$:
+\begin{align} 
+	\frac{\rm d}{{\rm d} \tau}
 	\begin{pmatrix}
-		\hat\theta_x \\ \hat\lambda_x
+		\hat\theta_{\tau} \\ \hat\lambda_{\tau}
 	\end{pmatrix} =
 	\begin{pmatrix}
-		Hl(\hat\theta_x) & \nabla g_x(\hat \theta_x)\\
-		\nabla g_x(\hat\theta_x)^T & 0
+		Hl(\hat\theta_{\tau}) & \nabla c_{\tau}(\hat \theta_{\tau})\\
+		\nabla c_{\tau}(\hat\theta_{\tau})^T & 0
 	\end{pmatrix}^{-1}
 	\begin{pmatrix}
 		0 \\ 1
