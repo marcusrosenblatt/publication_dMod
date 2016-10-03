@@ -263,7 +263,7 @@ The paradigm of \pkg{dMod} is to make use of derivatives wherever possible. It i
 
 \subsection{Prediction functions}
 
-\pkg{dMod} seeks to stay close to the mathematical formulation, i.e.~\code{x <- Xs(myodemodel)} will indeed return an \proglang{R} function, an object of class \code{prdfn}, which expects arguments \code{times} and \code{pars} and turns them into a model prediction. However, not only the solution $x(t)$ is returned, the sensitivities $\frac{\partial x}{\partial p}(t)$ are returned, too.
+\pkg{dMod} seeks to stay close to the mathematical formulation, i.e.~\code{x <- Xs(myodemodel)} will indeed return an \proglang{R} function, an object of class \code{prdfn}, which expects arguments \code{times} and \code{pars} and turns them into a model prediction. However, as indicated by the \code{"s"} in \code{"Xs"}, not only the solution $x(t)$ is returned, the sensitivities $\frac{\partial x}{\partial p}(t)$ are returned, too. 
 
 Besides parameters, the prediction might also depend on forcings $u(t)$ and sudden events, e.g.~setting states to 0 at a predefined point in time. Since forcings and events are by default not variable, they are defined for a prediction function the moment it is generated, \code{x <- Xs(odemodel, forcings = myforcings, events = myevents)}. The definitions of both, forcings and events, are compatible with the way they are defined in \pkg{deSolve}.
 
@@ -341,7 +341,10 @@ The aim of \pkg{dMod} is parameter estimation. The objective function to be mini
 
 The objective function is the final link in the chain of parameter transformations, prediction- and observation functions. It collects all derivative information and besides the objective value it computes gradient and Hessian. The standard optimizer employed within \pkg{dMod} is the \code{trust()} optimizer from the \pkg{trust} package.
 
-Objective functions can be added by the \code{"+"} operator, meaning the objective values, gradients and Hessians are accumulated by summation. Besides the standard function \code{normL2()}, the functions \code{constraintL2()} and \code{datapointL2()} produce objective functions, too. They allow to define parameter priors or treat data points as parameters. Thus, a typical objective function used for parameter estimation could be \code{obj <- normL2(data, g*x*(p1+p2+p3)) + constraintL2(mu, sigma)}.
+Objective functions can be added by the \code{"+"} operator, meaning the objective values, gradients and Hessians are accumulated by summation. Besides the standard function \code{normL2()}, the functions \code{constraintL2()} and \code{datapointL2()} produce objective functions, too. They allow to define parameter priors or treat data points as parameters. Thus, a typical objective function used for parameter estimation could be 
+\begin{center}
+	\code{obj <- normL2(data, g*x*(p1+p2+p3)) + constraintL2(mu, sigma)}.
+\end{center}
 
 
 \section{Three-compartment model of bile acid transport}
