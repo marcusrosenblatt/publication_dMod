@@ -24,7 +24,7 @@
 %% for pretty printing and a nice hypersummary also set:
 \Plainauthor{Daniel Kaschek, Marcus Rosenblatt, Wolfgang Mader, Mirjam Fehling-Kaschek} %% comma-separated
 \Plaintitle{Dynamic Modeling and Parameter Estimation in R} %% without formatting
-\Shorttitle{Dynamic Modeling} %% a short title (if necessary)
+\Shorttitle{Dynamic Modeling and Parameter Estimation in R} %% a short title (if necessary)
 
 %% an abstract and keywords
 \Abstract{
@@ -733,7 +733,7 @@ mymodel <- odemodel(reactions, modelname = "bamodel")
 \end{CodeInput}
 \end{CodeChunk}
 
-For the implicit parameter transformation we need the ODE which is obtained by the command \code{as.eqnvec()} from the reactions, an \code{eqnlist} object. The Jacobian of $f$ is rank-deficient because the system has a conserved quantity $c = \verb!TCA_buffer + TCA_cana + TCA_cell!$ which is the total TCA amount. Replacing one element of $f$ by $c - \verb!TCA_tot!$, the rank of the Jacobian is completed, the condition for the local existence of the implicit function $g(p)$ is satisfied and the steady state is parameterized by $p$ and the additional parameter \code{TCA_tot}.
+For the implicit parameter transformation we need the ODE which is obtained by the command \code{as.eqnvec()} from the reactions. The Jacobian of $f$ is rank-deficient because the system has a conserved quantity $c = \verb!TCA_buffer + TCA_cana + TCA_cell!$ which is the total TCA amount. Replacing one element of $f$ by $c - \verb!TCA_tot!$, the rank of the Jacobian is completed, the condition for the local existence of the implicit function $g(p)$ is satisfied and the steady state is parameterized by $p$ and the additional parameter \code{TCA_tot}.
 
 \begin{CodeChunk}
 \begin{CodeInput}
@@ -745,7 +745,7 @@ pSS <- P(f, "TCA_tot", method = "implicit",
 \end{CodeInput}
 \end{CodeChunk}
 
-For the optimization, all outer parameters should still be log-parameters, an explicit parameter transformation. The final transformation will be a concatenation of the implicit and explicit transformations, \code{pSS*p}.
+For the optimization, all outer parameters should still be log-parameters, implemented by an explicit parameter transformation. Outer parameters for the initial values are not necessary any more. They can be replaced by 0 since the initival values are computed by the implicit transformation. The final transformation will be a concatenation of the implicit and explicit transformations, \code{pSS*p}.
 
 \begin{CodeChunk}
 \begin{CodeInput}
@@ -808,20 +808,20 @@ obj <- normL2(data, g*x*pSS*p) + constraintL2(pouter, sigma = 10)
 \end{CodeInput}
 \end{CodeChunk}
 
-The same simulated data set has been fitted by the fully explicit and the implicit/explicit model implementations. In both cases the global optimum is unique. Parameter profiles have been computed with both model implementations, shown in Figure~\ref{fig:allprofiles}.
+The same simulated data set has been fitted by the fully explicit and the implicit/explicit model implementations. In both cases the global optimum is unique. Parameter profiles have been computed with both model implementations, shown in Figure~\ref{fig:allprofiles}. In addition, the original profiles without steady-state constraints are plotted.
 \begin{figure}[ht]
 	\centering
 	\includegraphics[width = \textwidth]{images/figure8}
-	\caption{Comparison of parameter profiles. The profile likelihood for the model without steady-state constraints, explicit steady-state constraints and implicit implementation of steady states is visualized by different colors.}
+	\caption{Parameter profiles for three different model implementations. The profile likelihood around the global optimum for the models without steady-state constraints, explicit steady-state constraints and implicit implementation of steady states is visualized by different colors.}
 	\label{fig:allprofiles}
 \end{figure}
-The optima found by all three approaches are statistically compatible. The two implementations using the steady-state information show exactly the same profiles. Since one formulation is parameterized by \code{TCA_cell} whereas the other is parameterized by \code{TCA_tot}, the plot highlights one of the fundamental properties of the profile likelihood: invariance under reparameterization. In comparison to the profiles without steady-state information, the new profiles are narrower, meaning that the parameters are better identifiable. This was to be expected because we have reduced the dimension of the parameter space by one.
+The optima found by all three approaches, no steady-state, analytic steady-state and numeric steady-state, are statistically compatible. The two implementations using the steady-state information show exactly the same profiles. Since one formulation is parameterized by \code{TCA_cell} whereas the other is parameterized by \code{TCA_tot}, the plot highlights one of the fundamental properties of the profile likelihood: invariance under reparameterization. In comparison to the profiles without steady-state information, the new profiles are narrower, meaning that the parameters are better identifiable. This was to be expected because we have reduced the dimension of the parameter space by one.
 
 \subsection{Prediction uncertainty and validation profiles}
 
 Combining the steady-state constraint and two efflux experiments, one with closed canaliculi and the other with open canaliculi, we could fully identify the rate parameters \code{import}, \code{export_cana} and \code{reflux}. The amount parameter \code{TCA_tot} is fully coupled with the scaling parameter \code{s} such that both are structurally non-identifiable. The parameters \code{export_sinus} and \code{reflux_open} are practically non-identifiable since both parameters cannot be constrained to a finite interval with 95\% confidence.
 
-Next, we investigate the possibility to predict cellular amounts of TCA, \code{TCA_cell}, despite the non-identifiability of parameters. Certainly, it is necessary to fix the scale by including the knowledge about the total TCA amount which is 1. A prediction profile is computed based on a test data point
+Next, we investigate the possibility to predict cellular amounts of TCA, \code{TCA_cell}, despite the non-identifiability of parameters. Certainly, it is necessary to fix the scale by including the knowledge about the total TCA amount, knowledge that was not used before. A prediction profile is computed based on a test data point
 
 \begin{CodeChunk}
 \begin{CodeInput}
@@ -833,7 +833,7 @@ obj.validation <- datapointL2(name = "TCA_cell",
 \end{CodeInput}
 \end{CodeChunk}
 
-for the dynamic state \code{TCA_cell} at time $t = 41$ under the "standard" condition. The uncertainty $\sigma = 0.002$ is set to a small value, i.e.~below 1\% of the prediction value. The \code{datapointL2()} command returns an objective function which evaluates the model prediction\footnote{Several objective function combined by the \code{"+"} operator share the same environment. Thus, the prediction computed by the first objective function can be evaluated by all other functions to come.} and computes the least-squares function of the test datapoint, returning derivatives for the data-point parameter \code{d1}.
+for the dynamic state \code{TCA_cell} at time $t = 41$ under the "standard" condition. The uncertainty $\sigma = 0.002$ is set to a small value, i.e.~below 1\% of the prediction value. The \code{datapointL2()} command returns an objective function which evaluates the model prediction\footnote{Several objective functions combined by the \code{"+"} operator share the same environment. Thus, the prediction computed by the first objective function can be evaluated by all other functions to come.} and computes the least-squares function of the test datapoint, returning derivatives for the data-point parameter \code{d1}.
 
 The derivative information for \code{d1} is used by the \code{profile()} function to compute the profile likelihood with respect to this parameter:
 
@@ -854,12 +854,12 @@ First, we obtain the new parameter estimate \code{myfit$argument} with the new d
 
 \begin{figure}[ht]
 	\centering
-	\includegraphics[width = \textwidth]{images/figure9}
-	\caption{Validation profile and confidence bands for model prediction. (A) The profile likelihood for the data point parameter \code{d1} describing \code{TCA\_cell} at time point $t = 41$ was computed. (B) The same computation for different time points yields 95\% confidence bands on the prediction of \code{TCA\_cell}.}
+	\includegraphics[width = \textwidth]{images/figure9_mod}
+	\caption{Validation profile and confidence bands for the model prediction. (A) The profile likelihood for the data point parameter \code{d1} describing \code{TCA\_cell} at time point $t = 41$ is shown. (B) Computing the data parameter profile for different time points yields 95\% confidence bands on the prediction of \code{TCA\_cell}.}
 	\label{fig:validation}
 \end{figure}
 
-Changing the data-point parameter \code{d1}, the model is quickly forced to follow the new data point. This is apparent from the "validation" contribution to the total objective value. It remains small with respect to the "data" contribution originating from all other data points. Forcing the model prediction to deviate more than $0.01$ from the original one, the profile exceeds the 95\% confidence threshold providing a confidence interval for the prediction itself. The procedure has been repeated for several time points to produce a confidence band for the cellular TCA prediction, shown in Figure~\ref{fig:validation}B. The 95\% confidence band is closed towards small and large amounts. 
+Changing the data-point parameter \code{d1}, the model is quickly forced to follow the new data point. This is apparent from the "validation" contribution to the total objective value since it remains small with respect to the "data" contribution originating from all other data points. Forcing the model prediction to deviate more than $0.01$ from the original one, the profile exceeds the 95\% confidence threshold providing a confidence interval for the prediction itself. The procedure has been repeated for several time points to produce a confidence band for the cellular TCA prediction, shown in Figure~\ref{fig:validation}B. The 95\% confidence band is closed towards small and large amounts. 
 
 In summary, we find that the prediction of cellular TCA amounts is highly precise despite the non-identifiability of the \code{export_sinus} and \code{reflux_open} parameters.
 
