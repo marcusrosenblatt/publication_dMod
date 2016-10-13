@@ -949,43 +949,69 @@ precise despite the non-identifiability of the \code{export_sinus} and
 
 \section{Extensions of dMod}
 \label{sec:extensions}
+Computer algebra and symbolic tools are not part of \proglang{R}'s core functionality. In this section we illustrate two symbolic tools that are shiped with \pkg{dMod},  dealing with structural non-identifiability and steady-state constraints. They are implemented in \proglang{Python} and are interfaced via the \pkg{rPython} package.
 
 \subsection{Lie-group symmetry detection}
-In Section \ref{chap_uncertainty}, profile likelihood computation showed the existence of both practically and structurally non-identifiable parameters. While practical non-identifiabilities might only be removed by additional experiments, structural non-identifiabilties are connected to Lie-group symmetries, i.e. parameter transformations \[\Psi: (x,\theta) \Longrightarrow (x^*, \theta^*)\] that preserve model predictions of the observables: \[g(x^*, \theta^*) = g(x,\theta)\,.\] Based on \cite{merkt2015higher}, the \code{symmetryDetection()} command outputs a list of available symmetry transformations separated into scaling and translational invariances. For example, the code
+In Section \ref{chap_uncertainty}, profile likelihood computation showed the existence of both practically and structurally non-identifiable parameters. While practical non-identifiability arises from insufficient information in the data, structural non-identifiabilty is connected to Lie-group symmetries, i.e. transformations of the states and parameters \[\Psi: (x,\theta) \longmapsto (x^*, \theta^*)\] that preserve the model prediction of the observables: \[g(x^*, \theta^*) = g(x,\theta)\,.\] Based on \citep{merkt2015higher}, the \code{symmetryDetection()} command outputs a list of available symmetry transformations. For example, the code
 \begin{CodeChunk}
 \begin{CodeInput}
 reactions <- NULL
-reactions <- addReaction(reactions, "TCA_buffer", "TCA_cell",
-                         rate = "import_buffer*TCA_buffer",
-                         description = "Uptake")
-reactions <- addReaction(reactions, "TCA_cell", "TCA_buffer",
-                         rate = "exp_sinus*TCA_cell",
-                         description = "Sinusoidal export")
-reactions <- addReaction(reactions, "TCA_cell", "TCA_cana",
-                         rate = "exp_cana*TCA_cell",
-                         description = "Canalicular export")
-reactions <- addReaction(reactions, "TCA_cana", "TCA_buffer",
-                         rate = "reflux*TCA_cana",
-                         description = "Reflux into the buffer")
-                         
+reactions <- addReaction(reactions, "TCA_buffer", "TCA_cell", 
+			 rate = "import_baso*TCA_buffer")
+reactions <- addReaction(reactions, "TCA_cell", "TCA_buffer", 
+			 rate = "export_sinus*TCA_cell")
+reactions <- addReaction(reactions, "TCA_cell", "TCA_cana", 
+			 rate = "export_cana*TCA_cell")
+reactions <- addReaction(reactions, "TCA_cana", "TCA_buffer", 
+			 rate = "reflux*TCA_cana")
+
 observables <- eqnvec(
   buffer = "s*TCA_buffer",
   cellular = "s*(TCA_cana + TCA_cell)"
 )
+
 symmetryDetection(as.eqnvec(reactions), observables)
 \end{CodeInput}
 \end{CodeChunk}
-outputs one scaling invariance for the parameters \code{s}, \code{TCA_buffer}, \code{TCA_cana} and \code{TCA_cell} which is in agreement with the identifiability analysis by the method of profile likelihood. Here, the scaling invariance could be removed by fixing one of the parameters to a certain value unequal to zero\footnote{Fixing $\mbox{TCA\_buffer}=0$ does not remove the invariance, since the corresponding symmetry transformation is not valid (\cite{merkt2015higher}).}. For the case of a translational invariance all values were allowed.
-
-\subsection{Analytical steady-state constraints}
-While for the the present model, the explicit steady-state implementation could be easily calculated by hand, this might be much more challenging for model classes with high amounts of states and parameters. For many of these cases, the \code{steadyStates()} command outputs an analytical steady-state solution that can be incorporated in the model as an additional parameter transformation. Based on \cite{rosenblatt2016customized}, the steady-state constraint is solved for a combination of state variables and kinetic parameters while positivity of the solution is ensured. As the paper states, the approach outperforms common methods of steady-state implementation with respect to reliability and performance of the optimization process. The corresponding code reads:
+returns the following output:
 \begin{CodeChunk}
 \begin{CodeInput}
-SS_equations <- steadyStates(reactions)
-pSS <- pSS + P(SS_equations)
+1 transformation(s) found:
+variable   : infinitesimal : transformation
+-----------------------------------------------------
+#1: Type: scaling
+TCA_buffer : -TCA_buffer   : TCA_buffer*exp(-epsilon)
+TCA_cana   : -TCA_cana     : TCA_cana*exp(-epsilon)
+TCA_cell   : -TCA_cell     : TCA_cell*exp(-epsilon)
+s          : s             : s*exp(epsilon)
 \end{CodeInput}
 \end{CodeChunk}
-In addition, \code{steadyStates()} prints conserved quantities that have been found during the calculation. In order to keep the steady-state solution as simple as possible, one of the state variables that contribute to the conserved quantity are left unconstrained.
+
+
+%outputs one scaling invariance for the parameters \code{s}, \code{TCA_buffer}, \code{TCA_cana} and \code{TCA_cell} which is 
+In agreement with the identifiability analysis by the profile-likelihood method, the parameters \code{s}, \code{TCA_buffer}, \code{TCA_cana} and \code{TCA_cell} are found to be non-identifiable due to a scaling symmetry. The corresponding scaling transformation, last column, leaves the observation invariant for any choice of \code{epsilon}. The parameter non-identifiability can be resolved choosing one representative from the orbit of the transformation. In our case, the scaling parameter could e.g.~be fixed to 1. 
+
+%scaling invariance could be removed by fixing one of the parameters to a certain value unequal to zero\footnote{Fixing $\mbox{TCA\_buffer}=0$ does not remove the invariance, since the corresponding symmetry transformation is not valid \citep{merkt2015higher}.}. For the case of a translational invariance all values were allowed.
+
+\subsection{Analytical steady-state constraints}
+While for the the present model, the steady-state could be explicitly calculated by hand, this might be much more challenging for models with a large number of states and parameters. For many of these models, the \code{steadyStates()} command outputs an analytical steady-state solution that can be incorporated in the model as an additional parameter transformation. Based on \citep{rosenblatt2016customized}, the steady-state constraint is solved for a combination of state variables and kinetic parameters while positivity of the solution is ensured. As the paper states, the approach outperforms common methods of steady-state implementation with respect to reliability and performance of the optimization process. For our example, the code reads
+\begin{CodeChunk}
+\begin{CodeInput}
+steadyStates(reactions, file = "SS.Rds)
+\end{CodeInput}
+\end{CodeChunk}
+yielding the output
+
+\begin{CodeChunk}
+\begin{CodeInput}
+TCA_cana   = TCA_buffer*export_cana*import_baso/(reflux*(export_cana + 
+	     export_sinus))
+TCA_cell   = TCA_buffer*import_baso/(export_cana + export_sinus)
+TCA_buffer = TCA_buffer
+\end{CodeInput}
+\end{CodeChunk}
+
+The solution is stored in an Rds file. After loading the file by \code{readRDS()}, the equations can be used when defining the parameter transformation.
 
 
 
