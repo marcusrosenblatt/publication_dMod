@@ -31,12 +31,12 @@
 
 %% an abstract and keywords
 \Abstract{
-In a wide variety of research fields, dynamic modeling is employed as an instrument to learn and understand complex systems. The differential equations involved in this process are mostly non-linear and depend on many parameters whose values decide upon the characteristics of the emergent system. The inverse problem, i.e.~the inference or estimation of parameter values from observed data, is interesting from two points of view. First, the existence point of view, dealing with the question whether the system is able to  produce the observed dynamics for any parameter values. Second, the identifiability point of view, investigating invariance of the prediction under change of parameter values, as well as the quantification of parameter uncertainty.
+In a wide variety of research fields, dynamic modeling is employed as an instrument to learn and understand complex systems. The differential equations involved in this process are usually non-linear and depend on many parameters whose values decide upon the characteristics of the emergent system. The inverse problem, i.e.~the inference or estimation of parameter values from observed data, is of interest from two points of view. First, the existence point of view, dealing with the question whether the system is able to reproduce the observed dynamics for any parameter values. Second, the identifiability point of view, investigating invariance of the prediction under change of parameter values, as well as the quantification of parameter uncertainty.
 
 
 In this paper, we present the \proglang{R} package \pkg{dMod} providing a framework for dealing with the inverse problem in dynamic systems. The particularity of the approach taken by \pkg{dMod} is to provide and propagate accurate derivatives computed from symbolic expressions wherever possible. This derivative information highly supports the convergence of optimization routines and enhances their numerical stability, a requirement for the applicability of sofisticated uncertainty analysis methods. Computational efficiency is achieved by automatic generation and execution of \proglang{C} code. The framework is object oriented (S3) and provides a variety of functions to set up dynamic models, observation functions and parameter transformations for multi-conditional parameter estimation.
 
-The key elements of the framework and the methodology implemented in \pkg{dMod} are highlighted by an application on a three-compartment transporter model within this paper.
+The key elements of the framework and the methodology implemented in \pkg{dMod} are highlighted by an application on a three-compartment transporter model.
 
 
 
@@ -44,8 +44,8 @@ The key elements of the framework and the methodology implemented in \pkg{dMod} 
 
 
 }
-\Keywords{Dynamic models, parameter estimation, code generation, maximum likelihood}
-\Plainkeywords{Dynamic models, parameter estimation, code generation, maximum likelihood} %% without formatting
+\Keywords{Dynamic models, parameter estimation, code generation, maximum likelihood, uncertainty analysis}
+\Plainkeywords{Dynamic models, parameter estimation, code generation, maximum likelihood, uncertainty analysis} %% without formatting
 %% at least one keyword must be supplied
 
 %% publication information
@@ -85,7 +85,7 @@ The key elements of the framework and the methodology implemented in \pkg{dMod} 
 \section{Introduction}
 Dynamic models are found in several research fields, such as physics, biology or finance. In all these fields, models link theoretical concepts and empirical evidence.
 %In a dynamic model, the single terms correspond to mechanisms or processes which are combined to a whole, giving rise to a complex system. If the single terms are associated to parameters, parameter estimation can identify those processes which are crucial to explain the observation.
-Single mechanisms or single processes of a complex system are represented by single terms occurring in the equations of a dynamic model. Parameter estimation can then identify those processes which are crucial to explain the observation.
+Single mechanisms or single processes of a complex system are represented by respective terms in the equations of a dynamic model. Parameter estimation can then identify those processes which are crucial to explain the observation.
 In that sense, parameter estimation can be employed as an instrument to \textit{understand} complex systems. Once, the link between observation and model is established by the estimated parameters, questions about their identifiability arise. The parameter space needs to be explored to analyze whether the estimate is unique and to determine confidence bounds.
 
 Although the problem of parameter estimation in non-linear dynamic systems is highly relevant and at the heart of statistical computing, to this day there are not more than four \proglang{R} packages published on the topic on the Comprehensive \proglang{R} Archive Network (CRAN), namely \pkg{FME} \citep{FME}, \pkg{nlmeODE} \citep{nlmeODE}, \pkg{mkin} \citep{mkin} and \pkg{scaRabee} \citep{scaRabee}. All packages have in common that they are built upon the \pkg{deSolve} package \citep{deSolve}.
@@ -107,7 +107,7 @@ The core functionality is extended by two symbolic methods implemented in \progl
 The consequent implementation of capabilities to generate and propagate derivatives on a compiled-code level distinguishes \pkg{dMod} from other modeling frameworks as discussed above. Most of the standard optimization routines implemented in \proglang{R} need derivative information. However, the computation of derivatives in the context of ODE models holds some pitfalls. The accuracy of sensitivities obtained from finite differences can be insufficient because the step control of the integrator presents an additional source of numeric inaccuracy. Even for numeric methods circumventing this problem, e.g.~complex-step derivatives \citep{squire1998using}, the use of sensitivity equations is still beneficial judging from the accuracy vs.~computational cost ratio. See \citep{raue2013lessons} for a comparison of methods.
 
 Another distinguishing feature of \pkg{dMod} is the handling of non-identifiability of parameters, a phenomenon occurring frequently in the context of parameter estimation in dynamic systems.
-In some cases, non-identifiability has structural reasons. The differential equations bear certain symmetries and these can or cannot be broken by observation functions. A functional relationship between parameters that leaves the observation invariant is the consequence of the latter. In other cases, the data allows to determine a unique optimum but other solutions, although worse, cannot be statistically rejected. The \pkg{dMod} package deals with parameter identifiability and parameter uncertainty by the profile-likelihood method \citep{murphy2000profile, kreutz2013profile}. The method has proven especially useful in the case of non-identifiable parameters where results obtained from both, the quadratic approximation by the variance-covariance matrix and MCMC sampling can be misleading \citep{raue2013joining}. Besides parameter uncertainties, the profile likelihood method allows to estimate prediction uncertaint \citep{kreutz2012likelihood}. It therefore supports the planning of new informative experiments or suggests possible model reductions.
+In some cases, non-identifiability has structural reasons. The differential equations bear certain symmetries and these can or cannot be broken, depending on the structure of the observation. A functional relationship between parameters that leaves the observation invariant is the consequence of the latter. In other cases, the data allows to determine a unique optimum but other solutions, although worse, cannot be statistically rejected. The \pkg{dMod} package deals with parameter identifiability and parameter uncertainty by the profile-likelihood method \citep{murphy2000profile, raue2009structural, kreutz2013profile}. The method has proven especially useful in the case of non-identifiable parameters where results obtained from both, the quadratic approximation by the variance-covariance matrix and MCMC sampling can be misleading \citep{raue2013joining}. Besides parameter uncertainties, the profile likelihood method allows to estimate prediction uncertainty \citep{kreutz2012likelihood}. It therefore supports the planning of new informative experiments \citep{raue2011addressing} or suggests possible model reductions \citep{maiwald2016driving}.
 
 The key methods implemented in \pkg{dMod} are illustrated in great detail on a dynamic model of bile acid flow. The example is a show-case of how modeling \textit{is} a dynamic process, using the analysis tools implemented in \pkg{dMod} to predict, plan new experiments, combine data from different experiments and include non-linear parameter constraints to improve parameter identifiability. Thereby, we show that \pkg{dMod} is a full-grown, flexible modeling environment, fast, thanks to compiled code, reliable, thanks to symbolic derivatives, and accurate, thanks to advanced statistical methods.
 
@@ -122,7 +122,7 @@ The paper is organized as follows: Section~\ref{sec:theory} introduces the mathe
 \label{sec:theory}
 
 \subsection{Dynamic models and model sensitivities}
-Dynamic models describe systems with states $x$, usually quantifying the involved species, their interaction and evolution over timer. %  as e.g. given by chemical reaction networks.
+Dynamic models describe systems with states $x$, usually quantifying the involved species, their interaction and evolution over time. %  as e.g. given by chemical reaction networks.
 The time evolution of the states is expressed via a set of ODEs, $\dot x = f(x)$. Although constituting quite a special class of dynamic systems, chemical reaction networks formulated by the law of mass action as considered here allow for surprisingly general applications. Typical ODE examples derived from the law of mass action are:
 \begin{itemize}
 	\item $\dot x_A = k_p$, constant production of $x_A$ ($\emptyset \rightarrow A$)
@@ -158,7 +158,7 @@ The sensitivities $s_i = \frac{\partial x}{\partial \theta_i}$ satisfy the \text
 \end{align}
 a system of ordinary differential equations that in general depend on the states $x$ and, therefore, need to be solved jointly with the original ODE.
 
-Often the experimentally observed quantities $y$ do not directly correspond to the species $x$ described by the ODE, but are obtained via an observation function $g: \mathbb{R}^n \rightarrow \mathbb{R}^m$,  \begin{align}
+Often, the experimentally observed quantities $y$ do not directly correspond to the species $x$ described by the ODE, but are obtained via an observation function $g: \mathbb{R}^n \rightarrow \mathbb{R}^m$,  \begin{align}
 	y = g(x, c)
 	\label{eq:observation}
 \end{align}
@@ -181,12 +181,12 @@ Maximum-likelihood estimation is based on the maximization of the likelihood fun
 \end{align*}
 meaning that $\hat\theta$ is an extremum estimator. Depending on the model class and the probability distribution $\phi$, maximization of the likelihood can be a challenge beyond the scope of analytical methods. Numerical optimization methods help to solve the maximization problem in practical applications.
 
-The easiest and one of the most frequent situations is when $\phi$ follows a normal distribution, $\phi\sim\mathcal N(\mu(\theta), \Sigma)$. When measurements are statistically independent, the variance-covariance matrix $\Sigma = {\rm diag}(\sigma_1^2, \dots, \sigma_N^2)$ is diagonal and $\phi$ factorizes. The Likelihood function becomes
+The easiest and one of the most frequent situations is when $\phi$ follows a normal distribution, $\phi\sim\mathcal N(y(\theta), \Sigma)$. When measurements are statistically independent, the variance-covariance matrix $\Sigma = {\rm diag}(\sigma_1^2, \dots, \sigma_N^2)$ is diagonal and $\phi$ factorizes. The likelihood function reads 
 \begin{align}
-	L(\theta) &= \prod_{i = 1}^N \frac{1}{\sqrt{2\pi\sigma_i^2}} e^{-\frac{\mu_i(\theta)^2}{2\sigma_i^2}} .
+	L(\theta) &= \prod_{i = 1}^N \frac{1}{\sqrt{2\pi\sigma_i^2}} e^{-\frac{(y_i(\theta)-y_i^D)^2}{2\sigma_i^2}} .
 	\label{eq:likelihood}
 \end{align}
-The connection between the statistical model and the observed data is given by $\mu_i(\theta) = y_i(\theta) - y_i^D$. Taking twice the negative logarithm, eq.~\eqref{eq:likelihood} turns into
+Taking twice the negative logarithm, eq.~\eqref{eq:likelihood} turns into
 \begin{align}
 	l(\theta) = -2\log L(\theta) &= \sum_i \left[\left(\frac{y_i(\theta) - y_i^D}{\sigma_i}\right)^2 + \log(2\pi\sigma_i^2)\right],
 	\label{eq:nll}
@@ -203,7 +203,7 @@ Optimization by the Newton method attempts to iteratively find the root of the g
 	\theta^{(n+1)} = \theta^{(n)} - Hl(\theta)^{-1}\nabla l(\theta),
 	\label{eq:newton}
 \end{align}
-where $Hl(\theta)$ denotes the Hessian, i.e.~the matrix of second derivatives of $l(\theta)$. The fact that for normally distributed noise the log-likelihood is a least squares function, has a big advantage: gradient and (approximate) Hessian can be computed from first-order derivatives,
+where $Hl(\theta)$ denotes the Hessian, i.e.~the matrix of second derivatives of $l(\theta)$. The fact that for normally distributed noise the log-likelihood is a least squares function, has a big advantage: gradient and (approximate) Hessian can be computed from first-order derivatives  \citep{press1996numerical}. Since the second-order contributions to the Hessian can be neglected, gradient and Hessian read
 \begin{align}
 	\nabla l(\theta) = 2 r(\theta) J(\theta) \quad\quad Hl(\theta) \approx 2 J(\theta)^T J(\theta),
 	\label{eq:derivatives}
@@ -225,9 +225,9 @@ In each iteration, the trust-region radius is adjusted and the optimization prob
 
 \subsection{Uncertainty analysis}
 
-Parameter estimates $\hat \theta$  are obtained by non-linear optimization of the log-likelihood function $l(\theta)$. Although being a function of the parameters,  the log-likelihood depends on the data, too. Consequently, "equivalent" random realizations of the data would lead to different parameter estimates $\hat\theta$. Given $\hat\theta$ for one random realization of the data, the question is, if we can reject other parameters $\theta$ with a certain confidence level. This leads to the related question of parameter convidence intervals.
+Parameter estimates $\hat \theta$  are obtained by non-linear optimization of the log-likelihood function $l(\theta)$. Although being a function of the parameters,  the log-likelihood depends on the data, too. Consequently, "equivalent" random realizations of the data would lead to different parameter estimates $\hat\theta$. Given $\hat\theta$ for one random realization of the data, the question is, at which significance level we can reject other parameters $\theta$. This leads to the related question of parameter convidence intervals.
 
-A useful tool to derive confidence intervals is the profile likelihood. Consider a parameter of interest, $\theta_i$, being one of the parameters in the vector $\theta$. Furthermore, let $c_{\tau}(\theta) = \theta_i - \tau = 0$ be a parameter constraint.
+A useful tool to derive confidence intervals beyond the scope of Fisher Information Matrix is the profile likelihood. Consider a parameter of interest, $\theta_i$, being one of the parameters in the vector $\theta$. Furthermore, let $c_{\tau}(\theta) = \theta_i - \tau = 0$ be a parameter constraint.
 Then, extending the likelihood with the constraint via a Lagrange multiplier $\lambda$ yields
 \begin{align}
 	\begin{aligned}
@@ -236,7 +236,7 @@ Then, extending the likelihood with the constraint via a Lagrange multiplier $\l
 	\end{aligned}
 	\label{eq:pl}
 \end{align}
-which called the profile likelihood of the $i^{\;\rm th}$ parameter. The path $\tau \mapsto (\hat\theta_{\tau}, \hat\lambda_{\tau})$ along the minimizing parameters is called the profile likelihood path. Hence, the profile likelihood ${\rm pl}_i$ returns the minimal log-likelihood under the constraint $\theta_i \stackrel{!}{=} \tau$. By construction, the inequality $D := {\rm pl}_i(\tau) - {\rm pl}_i(\hat \theta_i) \geq 0$ holds for all $\tau$, assuming equality at least for $\tau = \hat\theta_i$. Interpreting the unconstrained model as the null model and that with $\theta_i$ fixed to $\tau$ as the alternative model, the value $D$ is twice the log of the likelihood-ratio between those. Hence, a likelihood-ratio test can be performed to accept or reject the alternative model at a given confidence level. To compute the corresponding threshold, we assume Wilks' theorem according to which the thresholds are the quantiles of the $\chi^2$ distribution with one degree of freedom. Consequently, the $1\sigma, 2\sigma, \dots, n\sigma$-confidence intervals of $\theta_i$ are those values of $\tau$ for which ${\rm pl}_i(\tau) \leq 1, 2, \dots, n$, respectively.
+which is called the profile likelihood of the $i^{\;\rm th}$ parameter. The path $\tau \mapsto (\hat\theta_{\tau}, \hat\lambda_{\tau})$ along the minimizing parameters is called the profile likelihood path. Hence, the profile likelihood ${\rm pl}_i$ returns the minimal log-likelihood under the constraint $\theta_i \stackrel{!}{=} \tau$. By construction, the inequality $D_i := {\rm pl}_i(\tau) - {\rm pl}_i(\hat \theta_i) \geq 0$ holds for all $\tau$, assuming equality at least for $\tau = \hat\theta_i$. Interpreting the unconstrained model as the null model, which we assume to be true, and that with $\theta_i$ fixed to $\tau$ as the alternative model, the value $D$ is twice the log of the likelihood-ratio between those. Hence, a likelihood-ratio test can be performed to accept or reject the alternative model at a given confidence level. To compute the corresponding threshold, we assume Wilks' theorem according to which the thresholds are the quantiles of the $\chi^2$ distribution with one degree of freedom. Consequently, the $68\%/90\%/95\%$-confidence intervals of $\theta_i$ are those values of $\tau$ for which $D_i(\tau) \leq 1$, $2.71$ and $3.84$, respectively.
 
 The reason to formulate the profile likelihood by Lagrangian multipliers is that we can directly use eq.~\eqref{eq:pl} to derive the profile likelihood path $(\hat \theta_{\tau}, \hat\lambda_{\tau})$ with respect to $\tau$:
 \begin{align}
@@ -266,19 +266,19 @@ The profile likelihood approach can be applied to compute confidence intervals f
 
 The guiding idea behind the implementation of \pkg{dMod} is to provide a class structure for models, predictions, observations and parameter transformations that allows a flexible combination of many experimental conditions in one objective function to fit models to data. This flexibility is achieved by two concepts: (1) concatenation of functions by the \code{"*"} operator and (2) stacking of functions representing different conditions by the \code{"+"} operator. The handling and propagation of derivatives is part of the classes and happens in the background. Methods for the generic \code{print()}, \code{plot()} and \code{summary()} functions are implemented for most outputs.
 
-\subsection{Model  formulation}
+\subsection{Model formulation}
 
 A system of ordinary differential equation $\dot x = f(x, p, u, t)$ is represented by a named \code{character} vector of symbolic expressions, the right-hand side of the ODE, involving symbols for the states $x$, the parameters $p$, the forcings $u$ and the keyword \code{time} for $t$. The names of the vector are the state names. The class provided by \pkg{dMod} for such objects is the \code{eqnvec} class which checks whether the character can be parsed and thus, can be interpreted as an equation.
 
 \pkg{dMod} provides several ways to define the differential equations. An \code{eqnvec} of equations can be explicitly formulated, analogously to a \code{c()} command. Especially for chemical reactions it can be tedious to keep track of all gain and loss terms. Therefore, \pkg{dMod} provides also the \code{eqnlist} class which encodes the ODE by a list of (1) state names, (2) rate expressions, (3) compartment volumes and (4) the stoichiometric matrix. Each reaction flux, c.f.~eq.~\eqref{eq:Sv}, occurs only once and the gain and loss is represented by the coefficients in the stoichiometric matrix. \pkg{dMod} supports the read-in of a csv file with the stoichiometric matrix and rate expressions and provides a function \code{addReaction()} to construct an \code{eqnlist} object step-by-step or add further reactions to an already existing \code{eqnlist}. An \code{eqnlist} is converted to (differential) equations, i.e.~an \code{eqnvec}, by \code{as.eqnvec()}. The conversion does all the bookkeeping of gain and loss terms and volume ratios due to compartment transitions.
 
-\pkg{dMod} makes use of derivatives wherever possible. It is one of the core functionalities of the \pkg{cOde} package upon which \pkg{dMod} is based to augment a system of ODEs by its sensitivity equations. If many parameters are involved and the system consists of many states, the number of equations quickly grows. Solving the equations can be considerably accelerated by utilizing compiled code. \pkg{dMod} provides the \code{odemodel} class. An object of class \code{odemodel} is generated from an \code{eqnlist} or \code{eqnvec}. In the background, \proglang{C} code for the ODE and the combined system of ODE and sensitivity equations is generated, written to the working directory and compiled. The \code{odemodel} object keeps track of the shared objects. It is the basis of a prediction function $x(t, p)$ generated by the \code{Xs()} command.
+\pkg{dMod} makes use of derivatives wherever possible. It is one of the core functionalities of the \pkg{cOde} package upon which \pkg{dMod} is based to augment a system of ODEs by its sensitivity equations. If $r$ parameters are involved and the system consists of $n$ states, the number of equations grows as quick as $n^2 + nr$. Solving the equations can be considerably accelerated by utilizing compiled code. \pkg{dMod} provides the \code{odemodel} class. An object of class \code{odemodel} is generated from an \code{eqnlist} or \code{eqnvec}. In the background, \proglang{C} code for the ODE and the combined system of ODE and sensitivity equations is generated, written to the working directory and compiled. The \code{odemodel} object keeps track of the shared objects. It is the basis of a prediction function $x(t, p)$ generated by the \code{Xs()} command.
 
 \subsection{Prediction functions}
 
-\pkg{dMod} seeks to stay close to the mathematical formulation, i.e.~\code{x <- Xs(myodemodel)} will indeed return an \proglang{R} function, an object of class \code{prdfn}, which expects arguments \code{times} and \code{pars} and turns them into a model prediction. However, as indicated by the \code{"s"} in \code{"Xs"}, not only the solution $x(t)$ is returned, the sensitivities $\frac{\partial x}{\partial p}(t)$ are returned, too.
+\pkg{dMod} seeks to stay close to the mathematical formulation, i.e.~\code{x <- Xs(myodemodel)} will indeed return an \proglang{R} function, an object of class \code{prdfn}, which expects arguments \code{times} and \code{pars} and turns them into a model prediction. The letter \code{"s"} in \code{"Xs"} refers to sensitivities, i.e.~the solution $x(t)$ is returned, the sensitivities $\frac{\partial x}{\partial p}(t)$ are returned, too.
 
-Besides parameters, the prediction might also depend on forcings $u(t)$ and sudden events, e.g.~setting states to 0 at a predefined point in time. Since forcings and events are by default not variable, they are defined for a prediction function the moment it is generated, \code{x <- Xs(odemodel, forcings = myforcings, events = myevents)}. The definitions of both, forcings and events, are compatible with the way they are defined in \pkg{deSolve}.
+Besides parameters, the prediction might also depend on forcings $u(t)$ and sudden events, e.g.~setting states to 0 at a predefined point in time. Since forcings and events are by default fixed, they are defined together with the  prediction function, \code{x <- Xs(odemodel, forcings = myforcings, events = myevents)}. The definitions of both, forcings and events, are compatible with the way they are defined in \pkg{deSolve}.
 
 \subsection{Observation functions}
 
@@ -286,7 +286,7 @@ Besides parameters, the prediction might also depend on forcings $u(t)$ and sudd
 
 An observation function is a function $g(x, p_{\rm obs}, t)$ that evaluates the solution $x(t)$ together with additional (observation) parameters $p_{\rm obs}$. The function can explicitly depend on time~$t$. Similar to the ODE case, an observation function can be expressed as a character vector with names corresponding to the names of the observables and equations involving symbols for the states, parameters and the keyword \code{time}. An observation function is defined as an \code{eqnvec} and turned into an \proglang{R} function via \code{Y()}.
 
-It is one of the fundamental concepts of \pkg{dMod} to allow concatenation of functions via the \code{"*"} operator. The mathematical formulation $y = g\circ x$, i.e.~$y(t, p) = (g\circ x)(t, p):= g(x(t, p), p, t)$ becomes \code{y = g*x} in \proglang{R}. To obtain derivatives $\frac{\partial y}{\partial p}$, the chain rule is applied, yielding $\frac{\partial y}{\partial p} = \frac{\partial g}{\partial x}\frac{\partial x}{\partial p} + \frac{\partial g}{\partial p}$. This means that \code{Y()} needs to be informed which symbols are states and parameters to generate the corresponding expressions $\frac{\partial g}{\partial x}$ and $\frac{\partial g}{\partial p}$. The observation function \code{g} takes care of computing theses derivatives from the symbolic expressions and doing the matrix multiplication with the sensitivities $\frac{\partial x}{\partial p}$ from the prediction function. Evaluation of symbolic expressions can become inefficient in \proglang{R}. Therefore, the observation function is usually translated into a \proglang{C} code and compiled.
+It is one of the fundamental concepts of \pkg{dMod} to allow concatenation of functions via the \code{"*"} operator. The mathematical formulation $y = g\circ x$, i.e.~$y(t, p) = (g\circ x)(t, p):= g(x(t, p), p, t)$ becomes \code{y = g*x} in \proglang{R}. To obtain derivatives $\frac{\partial y}{\partial p}$, the chain rule is applied: $\frac{\partial y}{\partial p} = \frac{\partial g}{\partial x}\frac{\partial x}{\partial p} + \frac{\partial g}{\partial p}$. This means that \code{Y()} needs to be informed which symbols are states and parameters to generate the corresponding expressions $\frac{\partial g}{\partial x}$ and $\frac{\partial g}{\partial p}$. The observation function \code{g} takes care of computing theses derivatives from the symbolic expressions and doing the matrix multiplication with the sensitivities $\frac{\partial x}{\partial p}$ from the prediction function. Evaluation of symbolic expressions can become inefficient in \proglang{R}. Therefore, the observation function is usually translated into a \proglang{C} code and compiled.
 
 When observation- and prediction functions are concatenated, the result is a prediction function, e.g.~\code{y = g*x} is the \proglang{R} function computing values $y(t)$ from the arguments \code{times} and \code{pars} via evaluation of the ODE and subsequent evaluation of the observation function. Two observation functions can be concatenated, too, again yielding an observation function.
 
@@ -304,7 +304,7 @@ Let \code{g}, \code{x}, \code{p1} and \code{p2} be an observation-, a prediction
 
 \subsection{Multi-conditional prediction}
 
-A set of parameter values, forcings and events capture a certain condition in which we find the modeled system. Manipulating the system, single model parameters, forcings or events need to be changed to account for the manipulation. It is a typical approach to systems inference to systematically perturb small parts of a modeled system to reveal information about the processes.
+A set of parameter values, forcings and events capture a certain condition in which we find the modeled system. Manipulating the system, single model parameters, forcings or events need to be changed to account for the manipulation. It is a typical approach in systems inference to systematically perturb small parts of a modeled system to reveal information about the processes.
 
 The aim of \pkg{dMod} is to allow for "simultaneous" predictions under several conditions and compare these predictions to the corresponding experimental data sets to estimate model parameters.
 Different experimental conditions are typically expressed by that fact that some parameters are different between conditions whereas others are common to all conditions. This situation occurs e.g.~if perturbation experiments are performed, affecting only few parts of a system.
@@ -335,10 +335,10 @@ Prediction- and observation functions are generalized to multiple conditions by 
 	\end{aligned}
 	\label{}
 \end{align*}
-In words, if prediction- or observation functions are defined for different conditions then they expect condition-specific inputs which are evaluated by the matching functions. Examples for condition-specific prediction functions typically involve different forcings or events. Observation functions can e.g.~differ betwee different measurement techniques. In all these cases, the different prediction functions $x_1, \dots, x_n$ or observation functions $g_1, \dots, g_n$ are defined, referencing the condition, and combined by the \code{"+"} operator analogously to \code{p}.
+In words, if prediction- or observation functions are defined for different conditions then they expect condition-specific inputs which are evaluated by the matching functions. Examples for condition-specific prediction functions typically involve different forcings or events. Observation functions can e.g.~differ between different measurement techniques. In all these cases, the different prediction functions $x_1, \dots, x_n$ or observation functions $g_1, \dots, g_n$ are defined, referencing the condition, and combined by the \code{"+"} operator analogously to \code{p}.
 % Aufruf der Funktionen mit subset von conditions
 
-All commands, \code{P()}, \code{Xs()}, \code{Y()}, etc.~can be executed with \code{condition = NULL}. In that case, the corresponding returned function is generic and, if called for different conditions, the same identical function is evaluated with the condition-specific input. The other way round, if a function say \code{x} is defined for several conditions, its prediction can be evaluated only for a subset of conditions by \code{x(times, pars, conditions = myconditions)}.
+All commands, \code{P()}, \code{Xs()}, \code{Y()}, etc.~can be executed with \code{condition = NULL}. In that case, the corresponding returned function is generic and, if called for different conditions, the same identical function is evaluated with the condition-specific input. The other way round, if a function, say, \code{x} is defined for several conditions, its prediction can be evaluated only for a subset of conditions by \code{x(times, pars, conditions = myconditions)}.
 
 \subsection{The data structure}
 
@@ -357,7 +357,7 @@ The aim of \pkg{dMod} is parameter estimation. The objective function to be mini
 
 The objective function is the final link connecting the chain of parameter transformations, prediction- and observation functions to observations. It collects all derivative information and besides the objective value it also computes gradient and Hessian. The standard optimizer employed within \pkg{dMod} is the \code{trust()} optimizer from the \pkg{trust} package.
 
-Objective functions can be added by the \code{"+"} operator, meaning the objective values, gradients and Hessians are accumulated by summation. Besides the standard function \code{normL2()}, the functions \code{constraintL2()} and \code{datapointL2()} produce objective functions, too. They allow to define parameter priors or to treat data points as parameters. Thus, a typical objective function used for parameter estimation could be
+Objective functions can be added by the \code{"+"} operator, meaning the objective values, gradients and Hessians are accumulated by summation. Besides the standard function \code{normL2()}, \pkg{dMod} provides several other functions returning objective functions, e.g.~\code{constraintL2()} or \code{datapointL2()}. They allow to define parameter priors or treat data points as parameters, as shown in Section~\ref{sec:example}. Thus, a typical objective function used for parameter estimation could be
 \begin{center}
 	\code{obj <- normL2(data, g*x*(p1+p2+p3)) + constraintL2(mu, sigma)}.
 \end{center}
@@ -366,9 +366,9 @@ Objective functions can be added by the \code{"+"} operator, meaning the objecti
 \section{Three-compartment model of bile acid transport}
 \label{sec:example}
 
-The following model is a simplified version of the dynamic model on bile acid transport published in [REF]. Bile acids are produced in the liver. They are necessary for the digestion of fat and oil. In the liver, bile acids are taken up in hepatocytes (liver cells) by specific transporter molecules. Clearance occurs either via canalicular or sinusoidal export, i.e.~export to the bile transportation system of bile canaliculi or the intercellular space.
+The following model is a simplified dynamic model on bile acid transport. Bile acids are produced in the liver. They are necessary for the digestion of fat and oil. In the liver, bile acids are taken up in hepatocytes (liver cells) by specific transporter molecules. Clearance occurs either via canalicular or sinusoidal export, i.e.~export to the bile transportation system of bile canaliculi or the intercellular space.
 
-To study bile clearance, experiments with hepatocytes or hepatocyte-like cell lines are performed \textit{in-vitro}. Cells in a Petri dish stick together to a monolayer of cells, forming bile canaliculi in between cells. They adhere to the dish and are surrounded by a buffer providing the cells with nutrients. A radioactive label allows to measure the bile acid \textit{taurocholic acide} (TCA).
+To study bile clearance, experiments with hepatocytes or hepatocyte-derived cell lines are performed \textit{in-vitro}. Cells in a Petri dish stick together to a monolayer of cells, forming bile canaliculi in between cells. They adhere to the dish and are surrounded by a buffer providing the cells with nutrients. A radioactive label allows to measure the bile acid \textit{taurocholic acide} (TCA).
 
 For the mathematical description of bile flow, a three-compartment differential equation model is used. TCA is pipetted into the buffer compartment (\code{TCA_buffer}) from where it is transported into the cells (\code{TCA_cell}). Intracellular TCA is exported back to the buffer or the canalicular compartment (\code{TCA_cana}). Finally, canalicular TCA flows back into the buffer compartment. These processes give rise to the differential equations and corresponding flowchart presented in Figure~\ref{fig:flowchart}.
 \begin{figure}[ht]
@@ -538,7 +538,8 @@ Both, the simulated data and the model prediction from which the data is derived
 \subsection{Parameter transformation}
 Parameter transformations play a crucial role in the set-up of \pkg{dMod}. They can have several purposes such as fixing paramer values, implementing parameter bounds, including steady-state constraints or mapping parameters to different conditions. While being conceptually the same, it might be worth noting that parameters can be distinguished in two classes. The first class of parameters are \textit{initial values} for dynamic states, such as \code{TCA_buffer}. Parameters of the second class, such as rate parameters, have no accompanying dynamic state.
 
-First, we use parameter transformations to constrain all parameters to be positive or zero because all our parameters are either amounts or rate parameters. The parameter transformation is generated by the \code{P()} command taking an \code{eqnvec} object. Parameter transformations explicitly state the relation between the \textbf{inner} parameters, i.e.~the parameter values that are evaluated within the model, and the \textbf{outer} parameters, i.e.~the parameter values provided by the user or by an optimizer. Inner parameters are computed from outer parameters. The corresponding code reads:
+First, we use parameter transformations to constrain all parameters to be positive or zero because all our parameters are either amounts or rate parameters. The parameter transformation is generated by the \code{P()} command taking an \code{eqnvec} object. Parameter transformations explicitly state the relation between the \textbf{inner} parameters, i.e.~the parameter values that are evaluated within the model, and the \textbf{outer} parameters, i.e.~the parameter values provided by the user or by an optimizer. In our case, we imply positivity of inner parameters using the \code{exp()} function on outer parameters.
+The corresponding code reads:
 \begin{CodeChunk}
 \begin{CodeInput}
 p <- P(
@@ -572,7 +573,7 @@ The vector \code{outerpars} is the collection of all symbols on the right-hand s
 The objective of model fitting is to find parameter values such that the corresponding model prediction matches the observation. In Figure~\ref{fig:gxp}, the graphs of \code{buffer} and \code{cellular} should match the observation within the error.
 For normally distributed measurement noise, maxi\-mum-likelihood estimation is equivalent to least-squares estimation. A least-squares objective function can be generated by the \code{normL2()} command which requires a \code{datalist} object, in our case \code{data}, and a prediction function, in our case \code{g*x*p}.
 
-Frequently, non-identifiable parameters are encountered in non-linear dynamic systems. To prevent the optimizer from selecting extreme parameter values for which the ODE solver crashes, a general $L_2$ prior can be entailed on all parameters by calling \code{constraintL2()}. The objective functions returned by \code{normL2()} and \code{constraintL2()} are objects of class \code{objfn} and can be added by the \code{"+"} operator.
+Frequently, non-identifiable parameters are encountered in non-linear dynamic systems. To prevent the optimizer from selecting extreme parameter values for which the ODE solver aborts, a general quadratic prior can be entailed on all parameters by calling \code{constraintL2()}. The objective functions returned by \code{normL2()} and \code{constraintL2()} are objects of class \code{objfn} and can be added by the \code{"+"} operator.
 
 The following code illustrates the implementation of the objective function and how it is used with the \code{trust()} optimizer from the \pkg{trust} package to obtain a model fit, shown in Figure~\ref{fig:myfit}.
 
@@ -593,7 +594,7 @@ plot((g*x*p)(times, myfit$argument), data)
 	\label{fig:myfit}
 \end{figure}
 
-Besides non-identifiability of parameters, local optima constitute another pit-fall when optimizing non-linear functions. The \code{trust()} optimizer employs derivative information and therefore, if starting within a certain radius around a local optimum, is very efficient in finding it back. Once an optimum is found, we can be confident that there is no deeper point around. However, to be confident that an optimum is the globally best solution, we might want to scatter starting points for optimization runs all over the parameter space. The \pkg{dMod} package provides the \code{mstrust()} function based on \code{trust()} to do a multi-start search:
+Besides non-identifiability of parameters, local optima constitute another pit-fall when optimizing non-linear functions. The \code{trust()} optimizer employs derivative information and therefore, if starting within a certain region around a local optimum, is very efficient in finding it back. Once an optimum is found, we can be confident that there is no deeper point around. However, to be confident that an optimum is the globally best solution, we might want to scatter starting points for optimization runs all over the parameter space. The \pkg{dMod} package provides the \code{mstrust()} function based on \code{trust()} to do a multi-start search:
 \begin{CodeChunk}
 \begin{CodeInput}
 out_mstrust <- mstrust(obj, pouter, rinit = 1, rmax = 10, iterlim = 500,
@@ -785,7 +786,7 @@ pSS <- P(f, "TCA_tot", method = "implicit",
 \end{CodeInput}
 \end{CodeChunk}
 
-For the optimization, all outer parameters should still be log-parameters, implemented by an explicit parameter transformation. Outer parameters for the initial values are not necessary any more. They can be replaced by 0 since the initival values are computed by the implicit transformation. The final transformation will be a concatenation of the implicit and explicit transformations, \code{pSS*p}.
+For the optimization, all outer parameters should still be log-parameters, implemented by an explicit parameter transformation. Outer parameters for the initial values are not necessary any more. They can be replaced by 0 since the initial values are computed by the implicit transformation. The final transformation will be a concatenation of the implicit and explicit transformations, \code{pSS*p}.
 
 \begin{CodeChunk}
 \begin{CodeInput}
@@ -852,7 +853,7 @@ The same simulated data set has been fitted by the fully explicit and the implic
 \begin{figure}[ht]
 	\centering
 	\includegraphics[width = \textwidth]{images/figure8}
-	\caption{Parameter profiles for three different model implementations. The profile likelihood around the global optimum for the models without steady-state constraints, explicit steady-state constraints and implicit implementation of steady states is visualized by different colors.}
+	\caption{Parameter profiles for three different model implementations. The profile likelihood around the global optimum for the models without steady-state constraints, explicit steady-state constraints and implicit implementation of steady states is visualized by different colors. To illustrate that explicit (red) and implicit (blue) steady-state implementations yield the same result, the corresponding profiles are highlighted by red plus and blue cross signs, respectively.}
 	\label{fig:allprofiles}
 \end{figure}
 The optima found by all three approaches, no steady-state, analytic steady-state and numeric steady-state, are statistically compatible. The two implementations using the steady-state information show exactly the same profiles. Since one formulation is parameterized by \code{TCA_cell} whereas the other is parameterized by \code{TCA_tot}, the plot highlights one of the fundamental properties of the profile likelihood: invariance under reparameterization. In comparison to the profiles without steady-state information, the new profiles are narrower, meaning that the parameters have smaller confidence intervals. This was to be expected because we have reduced the dimension of the parameter space by one.
@@ -919,11 +920,11 @@ profile_prediction <- profile(obj + obj.validation,
 The result is shown in Figure~\ref{fig:validation}A. The interpretation of
 such a prediction profile is, that a measurement yielding a value for the
 cellular TCA level at time point $t=41$ outside of the interval $[0.19,0.21]$
-does not conform to our model with 95\% percent certainty.
+does not conform to our model with 95\% confidence.
 
 \begin{figure}[ht]
 	\centering
-	\includegraphics[width = \textwidth]{images/figure9_mod}
+	\includegraphics[width = \textwidth]{images/figure9}
 	\caption{Validation profile and confidence bands for the model prediction.
 (A) The profile likelihood for the data point parameter \code{d1} describing
 \code{TCA\_cell} at time point $t = 41$ is shown. (B) Computing the data
