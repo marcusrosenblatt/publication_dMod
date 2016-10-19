@@ -113,6 +113,7 @@ The key methods implemented in \pkg{dMod} are illustrated in great detail on a d
 
 The paper is organized as follows: Section~\ref{sec:theory} introduces the mathematical set-up of dynamic modeling, symmetries in dynamic systems, parameter estimation by the maximum-likelihood method and the profile likelihood. Section~\ref{sec:implementation} discusses the implementation and design principles behind the \pkg{dMod} software. The functionality of \pkg{dMod} is presented in Section~\ref{sec:example} on the example of bile acid flow in a three-compartment model and finally, Section~\ref{sec:extensions} discusses the two \proglang{Python} extensions shipped with \pkg{dMod}.
 
+The \pkg{dMod} package is available on the Comprehensive \proglang{R} Archive Network at \url{http://CRAN.R-project.org/package=dMod}. The project is hosted on GitHub, \url{https://github.com/dkaschek/dMod}, where the most recent development version is available. 
 
 % Rechenzeit erwähnen
 
@@ -258,6 +259,7 @@ Eq.~\eqref{eq:path} forms the basis of what is implemented in \pkg{dMod} for com
 The profile likelihood approach can be applied to compute confidence intervals for model predictions, too, see \citep{kreutz2012likelihood, hass2016fast}.
 
 
+\vspace{4em}
 
 
 
@@ -268,7 +270,7 @@ The guiding idea behind the implementation of \pkg{dMod} is to provide a class s
 
 \subsection{Model formulation}
 
-A system of ordinary differential equation $\dot x = f(x, p, u, t)$ is represented by a named \code{character} vector of symbolic expressions, the right-hand side of the ODE, involving symbols for the states $x$, the parameters $p$, the forcings $u$ and the keyword \code{time} for $t$. The names of the vector are the state names. The class provided by \pkg{dMod} for such objects is the \code{eqnvec} class which checks whether the character can be parsed and thus, can be interpreted as an equation.
+A system of ODEs $\dot x = f(x, p, u, t)$ is represented by a named \code{character} vector of symbolic expressions, the right-hand side of the ODE, involving symbols for the states $x$, the parameters $p$, the forcings $u$ and the keyword \code{time} for $t$. The names of the vector are the state names. The class provided by \pkg{dMod} for such objects is the \code{eqnvec} class which checks whether the character can be parsed and thus, can be interpreted as an equation.
 
 \pkg{dMod} provides several ways to define the differential equations. An \code{eqnvec} of equations can be explicitly formulated, analogously to a \code{c()} command. Especially for chemical reactions it can be tedious to keep track of all gain and loss terms. Therefore, \pkg{dMod} provides also the \code{eqnlist} class which encodes the ODE by a list of (1) state names, (2) rate expressions, (3) compartment volumes and (4) the stoichiometric matrix. Each reaction flux, c.f.~eq.~\eqref{eq:Sv}, occurs only once and the gain and loss is represented by the coefficients in the stoichiometric matrix. \pkg{dMod} supports the read-in of a csv file with the stoichiometric matrix and rate expressions and provides a function \code{addReaction()} to construct an \code{eqnlist} object step-by-step or add further reactions to an already existing \code{eqnlist}. An \code{eqnlist} is converted to (differential) equations, i.e.~an \code{eqnvec}, by \code{as.eqnvec()}. The conversion does all the bookkeeping of gain and loss terms and volume ratios due to compartment transitions.
 
@@ -699,7 +701,8 @@ The profile likelihood is computed by the \code{profile()} command. There are se
 The code
 \begin{CodeChunk}
 \begin{CodeInput}
-profiles <- profile(obj, bestfit, names(bestfit), limits = c(-5, 5), cores = 4)
+profiles <- profile(obj, bestfit, names(bestfit), 
+		    limits = c(-5, 5), cores = 4)
 plotProfile(profiles)
 plotPaths(profiles, whichPar = "s")
 \end{CodeInput}
