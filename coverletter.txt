@@ -1,0 +1,11 @@
+Dear editor,
+
+hereby, we would like to submit our manuscript on "Dynamic Modeling, Parameter Estimation and Uncertainty Analysis in R" to the Journal of Statistical Software.
+
+Dynamic modeling is an active field not just in engineering but also in the biomedical sciences. Although R plays a strong role in bioinformatics and data science, it is less frequently used for dynamic modeling and parameter estimation in dynamic models. Our new package "dMod" provides a sofisticated framework to set up dynamic models, estimate parameters and perform uncertainty analysis. We think that by the "dMod" package we could contribute to broaden the usability of R and make dynamic modeling available to a new community of users.
+
+We would be pleased if our manuscript and the dMod software would be considered for publication in your journal.
+
+Best regards,
+
+Daniel Kaschek
