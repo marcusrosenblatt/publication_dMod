@@ -1,3 +1,7 @@
+##
+## Replication script to reproduce the results shown in the manuscript
+##
+
 
 library(dMod)
 library(deSolve)
